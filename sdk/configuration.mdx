@@ -1,0 +1,112 @@
+---
+title: "Configure the Veritrix SDK for Your Deployment Environment"
+sidebarTitle: "Configuration"
+description: "Set VERITRIX_API_KEY, VERITRIX_ENDPOINT, and VERITRIX_DEBUG environment variables or trace.init() parameters to configure the SDK for any deployment."
+---
+
+Veritrix is designed to work with zero configuration beyond your project name and API key. For advanced use cases — self-hosted OTel collectors, enterprise deployments, or local debugging — every option is available as both an environment variable and a `trace.init()` parameter.
+
+## Environment variables
+
+Set these variables in your shell, `.env` file, or container environment before starting your application. Environment variables are the recommended approach for production deployments because they keep credentials and infrastructure details out of your source code.
+
+| Variable | Required | Description |
+|---|---|---|
+| `VERITRIX_API_KEY` | Required (unless passed to `trace.init()`) | Your Veritrix API key. Obtain one from **Settings → API Keys** in the [dashboard](https://app.veritrix.xyz). |
+| `VERITRIX_ENDPOINT` | Optional | A custom OTel exporter endpoint URL. Overrides the default Veritrix cloud endpoint. |
+| `VERITRIX_DEBUG` | Optional | Set to `"true"` to enable verbose debug logging to `stdout`. |
+
+```bash
+export VERITRIX_API_KEY="vx-your-api-key-here"
+export VERITRIX_ENDPOINT="http://my-collector:4317"   # optional
+export VERITRIX_DEBUG="true"                           # optional, never in production
+```
+
+## trace.init() parameter reference
+
+Parameters passed directly to `trace.init()` take precedence over their corresponding environment variables.
+
+<ParamField path="name" type="str" required>
+  The project or agent name. Must match the project name you created in the
+  Veritrix dashboard. Names are case-sensitive.
+</ParamField>
+
+<ParamField path="api_key" type="str" default="reads VERITRIX_API_KEY env var">
+  Your Veritrix API key. Omit this in production and supply the key through the
+  `VERITRIX_API_KEY` environment variable instead so it never appears in source
+  code or version control.
+</ParamField>
+
+<ParamField path="endpoint" type="str" default="Veritrix cloud endpoint">
+  The OpenTelemetry (OTel) exporter endpoint that spans are sent to. Override
+  this only if you are routing telemetry through your own OTel collector or
+  running a self-hosted Veritrix deployment. Corresponds to the
+  `VERITRIX_ENDPOINT` environment variable.
+</ParamField>
+
+<ParamField path="debug" type="bool" default="False">
+  When `True`, the SDK prints every span payload to `stdout` as it is emitted.
+  Useful for verifying that tracing is working during local development.
+  Corresponds to the `VERITRIX_DEBUG` environment variable. **Never enable in
+  production.**
+</ParamField>
+
+## Custom OTel endpoint
+
+If your organisation runs its own OpenTelemetry collector — for example, as part of an enterprise self-hosting arrangement or a private network deployment — point the SDK at it using the `endpoint` parameter or the `VERITRIX_ENDPOINT` variable.
+
+```python
+from veritrix import trace
+
+trace.init(
+    "my-agent",
+    endpoint="http://my-collector:4317",
+    debug=True,
+)
+```
+
+<Note>
+  The endpoint must expose the standard OTel gRPC port (`4317`) or HTTP port
+  (`4318`). Veritrix uses the OTLP exporter protocol and is compatible with
+  any OTel-compliant collector, including the OpenTelemetry Collector, Grafana
+  Alloy, and Datadog Agent.
+</Note>
+
+## Debug mode
+
+Enabling debug mode writes every span payload as formatted JSON to `stdout` at the moment it is emitted. This is the fastest way to confirm that `trace.init()` is working correctly and to inspect exactly what data is being sent.
+
+```python
+from veritrix import trace
+
+trace.init("my-agent", debug=True)
+```
+
+Example debug output:
+
+```json
+[veritrix:debug] span emitted {
+  "span": "planner.plan",
+  "duration_ms": 843,
+  "input_tokens": 512,
+  "output_tokens": 304,
+  "status": "ok"
+}
+```
+
+<Warning>
+  Debug mode logs **all** span payloads, which may include prompt content and
+  tool outputs. Do **not** enable `debug=True` or set `VERITRIX_DEBUG="true"`
+  in a production environment — it produces high-volume log output and can
+  expose sensitive data.
+</Warning>
+
+## Configuration precedence
+
+When the same option is set in multiple places, Veritrix resolves the value in this order, from highest to lowest priority:
+
+1. Argument passed directly to `trace.init()`
+2. Corresponding environment variable (`VERITRIX_API_KEY`, `VERITRIX_ENDPOINT`, `VERITRIX_DEBUG`)
+3. SDK default
+
+This means you can set a sensible default in your environment and selectively override it in code for specific agents or test runs.

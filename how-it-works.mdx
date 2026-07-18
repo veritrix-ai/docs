@@ -1,0 +1,142 @@
+---
+title: "How Veritrix Works: Instrument, Trace, and Diagnose"
+sidebarTitle: "How It Works"
+description: "Learn how Veritrix automatically captures every agent decision in three phases — from a two-line install to a plain-language root-cause summary."
+---
+
+Veritrix is built around a simple three-phase model: you instrument your agent with two lines of code, Veritrix traces every operation automatically, and when something goes wrong you diagnose it from a plain-language summary and a replayable timeline. There's no log parsing, no manual span annotation, and no bespoke adapters to maintain — just a standard OpenTelemetry-native pipeline that works with the frameworks you already use.
+
+## Phase 1 — Instrument
+
+Add two lines of code at the entry point of your agent. That's the entire instrumentation step.
+
+```python
+from veritrix import trace
+
+trace.init("checkout-agent")
+```
+
+Veritrix auto-instruments the agent framework you're using the moment `trace.init` is called. It patches the relevant SDK hooks at runtime so every downstream operation is captured without you annotating individual calls.
+
+**Supported frameworks (native, out of the box):**
+
+- OpenAI Agents SDK
+- LangChain / LangGraph
+- CrewAI
+- AutoGen (Microsoft)
+- LlamaIndex
+- CAMEL-AI
+
+<Note>
+  Veritrix is OpenTelemetry-native. If your infrastructure already exports OTel spans, Veritrix slots in without requiring you to remove or replace anything. Add two lines — get traces the same day.
+</Note>
+
+## Phase 2 — Trace
+
+Once instrumented, Veritrix captures four categories of operation automatically across every agent in your pipeline.
+
+| Span type | Example name | What it records |
+|---|---|---|
+| LLM call | `llm.call` | Model name, prompt, completion, token counts, latency |
+| Tool execution | `tool.exec` | Tool name, input arguments, output, latency |
+| Agent handoff | `agent.handoff` | Source agent, target agent, handoff payload, latency |
+| LLM retry | `llm.retry` | Retry count, failure reason, final status |
+
+Every span is stored with a consistent set of fields:
+
+```json
+{
+  "span": "planner.plan",
+  "duration_ms": 412,
+  "input_tokens": 487,
+  "output_tokens": 325,
+  "status": "ok"
+}
+```
+
+For failed spans, an `error` field is added automatically:
+
+```json
+{
+  "span": "reviewer.parse_json ×3",
+  "duration_ms": 1140,
+  "input_tokens": 1872,
+  "output_tokens": 1248,
+  "status": "fail",
+  "error": "JSONDecodeError at line 3"
+}
+```
+
+All spans belonging to a single agent run are grouped into a **trace** — a complete, ordered record of every operation from the first input to the final output.
+
+```json
+{
+  "trace_id": "0x9f3a·b21e·c704",
+  "span_count": 6,
+  "duration_ms": 4812,
+  "total_tokens": 7052,
+  "cost_usd": 0.083
+}
+```
+
+<Tip>
+  Every trace gets a permanent, shareable URL. Paste it into a Slack message or a Jira ticket — your CTO and compliance lead can open the same trace you're looking at without needing a Veritrix account.
+</Tip>
+
+## Phase 3 — Diagnose
+
+When a trace contains a failure, Veritrix generates a plain-language root-cause summary from the span data. You don't read raw logs. You read a one-sentence explanation of exactly what went wrong and why.
+
+**Example root-cause summary:**
+
+> *Reviewer failed to parse Coder's output as JSON on all 3 retries. The Coder's tool schema expects `diff: string`, but it returned `diff: object`.*
+
+From the same view you can:
+
+- **Replay any span** — inspect the exact prompt, tool payload, and model response at that moment in time
+- **Navigate the waterfall** — see all six spans laid out chronologically with durations and token counts
+- **Share a permalink** — send a direct link to the failing span, not a screenshot
+
+## What the dashboard shows you
+
+The trace waterfall in [app.veritrix.xyz](https://app.veritrix.xyz) gives you three levels of detail in one view.
+
+```
+trace 0x9f3a·b21e·c704 · 6 spans · 4.812s · tokens 7,052 · cost $0.083
+
+├── planner.plan          llm       412ms    812t    ✓ ok
+├── researcher.search_docs tool      890ms    —       ✓ ok
+├── researcher.rerank      llm       320ms    640t    ✓ ok
+├── coder.write_diff       llm      1280ms   2480t   ✓ ok
+├── coder.run_tests        tool      640ms    —       ✓ ok
+└── reviewer.parse_json ×3 llm      1140ms   3120t   ✗ fail
+    └── error: JSONDecodeError at line 3
+```
+
+Click any row to expand the full payload for that span.
+
+## OpenTelemetry compatibility
+
+Veritrix emits standard OpenTelemetry spans. This means:
+
+- **No vendor lock-in** — export spans to any OTel-compatible backend alongside Veritrix
+- **Existing pipelines work** — if you already emit OTel traces, Veritrix enriches them rather than replacing them
+- **Standard semantic conventions** — span names, attribute keys, and status codes follow OTel conventions so your existing dashboards and alerts continue to work
+
+<Note>
+  Compliance teams can export any trace or session as a PDF or CSV with full timestamps, content hashes, and provenance metadata. Veritrix is SOC 2 (in progress), HIPAA-ready, and aligned with NIST AI RMF. See the [Audit Export](/features/audit-export) documentation for details.
+</Note>
+
+## Summary
+
+<CardGroup cols={3}>
+  <Card title="Instrument" icon="wrench">
+    Two lines of code. No manual span annotation. Works with every major agent framework via OpenTelemetry-native auto-instrumentation.
+  </Card>
+  <Card title="Trace" icon="timeline">
+    Every LLM call, tool execution, agent handoff, and retry is captured automatically with durations, token counts, and full payloads.
+  </Card>
+  <Card title="Diagnose" icon="stethoscope">
+    Plain-language root-cause summaries, time-travel replay, and shareable permalinks — so any stakeholder can understand what broke and why.
+  </Card>
+</CardGroup>

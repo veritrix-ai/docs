@@ -1,0 +1,135 @@
+---
+title: "LlamaIndex Integration with Veritrix Observability"
+sidebarTitle: "LlamaIndex"
+description: "Instrument LlamaIndex RAG pipelines and agents automatically with Veritrix. Trace every query, retrieval step, LLM call, and tool use end to end."
+---
+
+Veritrix gives you deep visibility into LlamaIndex RAG pipelines, query engines, and agents from the moment you call `trace.init()`. Every query, document retrieval, re-ranking step, LLM synthesis call, and tool invocation is captured as a structured trace — so you can measure retrieval quality, diagnose slow queries, and understand exactly which steps contribute to latency and cost in your production pipelines.
+
+## Prerequisites
+
+- Python 3.9 or higher
+- An active [Veritrix account](https://app.veritrix.xyz) and API key
+- LlamaIndex core installed
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Install Veritrix and LlamaIndex">
+    ```bash
+    pip install veritrix llama-index
+    ```
+
+    For additional LlamaIndex integrations (e.g., specific LLM providers or vector stores), install the relevant packages separately:
+
+    ```bash
+    pip install llama-index-llms-openai llama-index-embeddings-openai
+    ```
+  </Step>
+
+  <Step title="Initialize Veritrix tracing">
+    Call `trace.init()` once at the top of your application, before you build any index or query engine.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("rag-agent")
+    ```
+  </Step>
+
+  <Step title="Build and query your index as normal">
+    Veritrix instruments LlamaIndex's global settings and callback system automatically after `trace.init()`. No changes to your index or query engine code are needed.
+
+    ```python
+    from llama_index.core import VectorStoreIndex
+    from veritrix import trace
+
+    trace.init("rag-agent")
+    # Build and query your index normally
+    ```
+  </Step>
+</Steps>
+
+## Example: RAG Pipeline
+
+The following example builds a simple in-memory vector index and runs a query against it. Veritrix traces the full retrieval-and-synthesis cycle, including the embedding call, retrieved nodes, and the final LLM call.
+
+```python
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
+from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
+from veritrix import trace
+
+trace.init("rag-agent")
+
+# Configure LlamaIndex settings
+Settings.llm = OpenAI(model="gpt-4o")
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+
+# Load documents and build the index
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+
+# Query the index — Veritrix traces the entire pipeline
+query_engine = index.as_query_engine(similarity_top_k=3)
+response = query_engine.query("What are the main benefits of AI agent observability?")
+print(response)
+```
+
+## Example: LlamaIndex Agent with Tools
+
+For agentic pipelines, Veritrix captures each reasoning step and tool call the agent makes before arriving at a final answer.
+
+```python
+from llama_index.core.agent import ReActAgent
+from llama_index.core.tools import FunctionTool
+from llama_index.llms.openai import OpenAI
+from veritrix import trace
+
+trace.init("llamaindex-react-agent")
+
+def get_weather(city: str) -> str:
+    """Returns current weather for a city."""
+    return f"The weather in {city} is 22°C and sunny."
+
+def get_population(city: str) -> str:
+    """Returns the population of a city."""
+    return f"The population of {city} is approximately 3.9 million."
+
+weather_tool = FunctionTool.from_defaults(fn=get_weather)
+population_tool = FunctionTool.from_defaults(fn=get_population)
+
+llm = OpenAI(model="gpt-4o")
+agent = ReActAgent.from_tools(
+    [weather_tool, population_tool],
+    llm=llm,
+    verbose=True,
+)
+
+response = agent.chat("What is the weather and population of Toronto?")
+print(response)
+```
+
+## What Gets Captured Automatically
+
+| Signal | Details |
+|---|---|
+| **LLM calls** | Model name, prompt, completion, token counts, latency |
+| **Embedding calls** | Model name, input text, vector dimensions, latency |
+| **Retrieval steps** | Query, retrieved nodes, similarity scores, top-k setting |
+| **Re-ranking** | Re-ranker model, input nodes, output order, scores |
+| **Tool calls** | Tool name, input arguments, output, duration |
+| **Agent reasoning steps** | Thought, action, observation per ReAct step |
+| **Retries** | Retry count, error type, delay |
+
+<Note>
+  Retrieval traces include the actual document chunks returned for each query, making it easy to audit whether your index is surfacing the most relevant content.
+</Note>
+
+## OpenTelemetry Compatibility
+
+Veritrix is built on [OpenTelemetry](https://opentelemetry.io). Every span it generates for your LlamaIndex pipelines is a fully compliant OTel span that can be exported to any OTel-compatible backend alongside your existing infrastructure telemetry.
+
+<Tip>
+  To configure a custom OTel exporter or forward traces to an existing collector, see the [OpenTelemetry integration page](/integrations/opentelemetry).
+</Tip>

@@ -1,0 +1,106 @@
+---
+title: "Alerting: Get Notified Before Agent Failures Compound"
+sidebarTitle: "Alerting"
+description: "Set threshold-based alerts on failure rates, cost anomalies, latency, and schema drift — delivered to Slack, PagerDuty, or any webhook."
+---
+
+Alerting keeps you informed the moment your agents start behaving unexpectedly, without requiring you to watch a dashboard. You define the condition — a failure-rate spike, a cost overrun, a latency breach, or an unexpected schema — and Veritrix fires a notification to whichever channel your team already uses for incidents. By the time an on-call engineer gets the ping, the trace that triggered the alert is already linked in the payload.
+
+<Note>
+  Alerting is available on the **Team** ($299/mo) and **Enterprise** plans. It is not included in the Free tier.
+</Note>
+
+## What You Can Alert On
+
+Veritrix supports four categories of alert conditions:
+
+<CardGroup cols={2}>
+  <Card title="Failure rate spikes" icon="triangle-exclamation">
+    Fire when the percentage of spans or traces returning `status: fail` exceeds a threshold you define — for example, more than 5% of `tool.exec` spans failing within a 5-minute window.
+  </Card>
+  <Card title="Cost anomalies" icon="dollar-sign">
+    Fire when the cost per run, per agent, or per span exceeds a dollar threshold — essential for catching runaway retry loops or unexpectedly expensive model calls before they blow your budget.
+  </Card>
+  <Card title="Latency threshold breaches" icon="clock">
+    Fire when end-to-end trace duration or any individual span duration exceeds a defined millisecond ceiling.
+  </Card>
+  <Card title="Schema drift" icon="code-branch">
+    Fire when a `tool.exec` span receives or returns a JSON structure that doesn't match the schema Veritrix learned from earlier runs — a leading indicator of upstream API changes breaking your agents.
+  </Card>
+</CardGroup>
+
+You can also alert on **specific error patterns** — for example, any span where the `error` field contains a particular substring such as `"RateLimitError"` or `"JSONDecodeError"`.
+
+## Alert Channels
+
+Connect Veritrix to the channel your team already uses for incident response:
+
+| Channel | Setup required |
+|---|---|
+| **Slack** | OAuth connection to your workspace; choose any channel |
+| **PagerDuty** | Integration key from your PagerDuty service |
+| **Webhook** | Any HTTPS endpoint that accepts a POST request |
+
+You can attach multiple channels to a single alert rule — for example, post to Slack for visibility and page PagerDuty only when the failure rate exceeds a higher secondary threshold.
+
+## How to Set Up an Alert
+
+<Steps>
+  <Step title="Go to the Alerts section">
+    Open the [Veritrix dashboard](https://app.veritrix.xyz) and click **Alerts** in the left sidebar.
+  </Step>
+  <Step title="Create a new alert">
+    Click **New Alert** in the top-right corner.
+  </Step>
+  <Step title="Choose your condition">
+    Select a condition type from the dropdown: **Failure Rate**, **Cost per Run**, **Latency**, **Schema Drift**, or **Error Pattern**. Fill in the threshold value and the evaluation window (e.g., "over the last 10 minutes").
+  </Step>
+  <Step title="Scope the alert (optional)">
+    Optionally restrict the alert to a specific agent name or span type. Leave blank to evaluate across all agents in the project.
+  </Step>
+  <Step title="Configure the channel">
+    Select your notification channel — Slack, PagerDuty, or Webhook — and follow the inline instructions to authenticate or paste your endpoint URL.
+  </Step>
+  <Step title="Save and activate">
+    Click **Save**. The alert becomes active immediately. Veritrix evaluates it on every new trace and fires a notification as soon as the condition is met.
+  </Step>
+</Steps>
+
+<Tip>
+  Start with a cost-per-run alert set to 2× your expected average spend. This catches runaway loops — such as an agent retrying indefinitely — before they become a significant line item.
+</Tip>
+
+## Webhook Payload Format
+
+When an alert fires to a webhook endpoint, Veritrix sends a JSON POST body with the following structure:
+
+```json
+{
+  "trace_id": "trc_01j9xk7m2p3qn8v6w4fz",
+  "agent": "coder",
+  "condition": "failure_rate > 10%",
+  "value": "14.3%",
+  "timestamp": "2025-03-15T14:22:07Z",
+  "dashboard_url": "https://app.veritrix.xyz/traces/trc_01j9xk7m2p3qn8v6w4fz"
+}
+```
+
+`trace_id` is the ID of the trace that crossed the threshold and triggered the alert. `dashboard_url` is a direct link to that trace's waterfall view.
+
+<Note>
+  Veritrix signs webhook requests with an HMAC-SHA256 signature in the `X-Veritrix-Signature` header. Verify this signature in your receiver to confirm the request is authentic.
+</Note>
+
+## Alert Conditions Reference
+
+| Condition | Parameter | Example |
+|---|---|---|
+| Failure rate | `failure_rate > X%` | `failure_rate > 5%` |
+| Cost per run | `cost_per_run > $Y` | `cost_per_run > $0.50` |
+| Latency | `duration_ms > Z` | `duration_ms > 8000` |
+| Error pattern | `error contains "..."` | `error contains "RateLimitError"` |
+| Schema drift | Automatic | Triggers on first schema mismatch |
+
+<Warning>
+  Schema drift alerts require at least 10 prior successful runs of the same tool span for Veritrix to establish a baseline schema. Alerts will not fire for spans Veritrix has never seen before.
+</Warning>

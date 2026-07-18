@@ -1,0 +1,74 @@
+---
+title: "Install the Veritrix Python SDK — Getting Started"
+sidebarTitle: "Installation"
+description: "Add Veritrix to your Python project in under a minute with pip install veritrix. Requires Python 3.8 or later and a Veritrix API key from the dashboard."
+---
+
+The Veritrix Python SDK is the fastest way to add full observability to your AI agents. Install the package, call `trace.init()` once, and every LLM call, tool execution, and agent handoff is captured automatically — no manual instrumentation required.
+
+## Requirements
+
+- Python **3.8 or later**
+- A Veritrix account and API key ([get one at app.veritrix.xyz](https://app.veritrix.xyz))
+
+## Install the package
+
+Choose the package manager you already use in your project.
+
+<CodeGroup>
+
+```bash pip
+pip install veritrix
+```
+
+```bash poetry
+poetry add veritrix
+```
+
+```bash conda
+conda install -c conda-forge veritrix
+```
+
+</CodeGroup>
+
+<Note>
+  If the `conda-forge` channel does not yet carry the latest release, install
+  with `pip` inside your conda environment instead:
+  `pip install veritrix`
+</Note>
+
+## Verify the installation
+
+Run the one-liner below to confirm the package is importable and check which version you have installed.
+
+```bash
+python -c "import veritrix; print(veritrix.__version__)"
+```
+
+You should see a version string such as `1.4.2` printed to your terminal. If you see an `ImportError`, double-check that you installed into the correct Python environment.
+
+## Get your API key
+
+You will need a Veritrix API key before you can send traces to the dashboard.
+
+<Steps>
+  <Step title="Open the Veritrix dashboard">
+    Go to [app.veritrix.xyz](https://app.veritrix.xyz) and sign in.
+  </Step>
+  <Step title="Navigate to API Keys">
+    Click **Settings** in the left sidebar, then select **API Keys**.
+  </Step>
+  <Step title="Create a new key">
+    Click **New API Key**, give it a descriptive name (e.g. `checkout-agent-prod`), and copy the value. Store it somewhere safe — it is only shown once.
+  </Step>
+</Steps>
+
+<Tip>
+  The recommended way to supply your API key is through the `VERITRIX_API_KEY`
+  environment variable so it never appears in source code. See the
+  [Initialization](/sdk/initialization) page for details.
+</Tip>
+
+## Next step
+
+Once the package is installed and you have an API key, head to [Initialization](/sdk/initialization) to wire up Veritrix in your project.

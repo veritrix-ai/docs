@@ -1,0 +1,103 @@
+---
+title: "Trace Waterfall: See Every Agent Span on One Timeline"
+sidebarTitle: "Trace Waterfall"
+description: "Visualize every LLM call, tool execution, and agent handoff across your entire multi-agent system on a single, interactive timeline."
+---
+
+The Trace Waterfall is your top-level view into how a multi-agent run actually executed. Every span — whether it's an LLM call, a tool execution, an agent handoff, or a retry — is plotted on a shared horizontal timeline, letting you see exactly what happened, in what order, and how long each step took. No more guessing why a pipeline was slow or where a failure propagated from; the waterfall makes the entire execution graph legible at a glance.
+
+## Understanding the Waterfall Layout
+
+The x-axis represents wall-clock time from the moment the root span opened to the moment the last span closed. Each row is a named span, and spans are nested under their parent to reflect the actual call hierarchy. When an agent hands off to a sub-agent, the child spans are indented beneath the handoff span so you can immediately see the relationship.
+
+**Span color coding:**
+
+| Color | Span type |
+|---|---|
+| Blue | `llm.call` |
+| Orange | `tool.exec` |
+| Purple | `agent.handoff` |
+| Yellow | `llm.retry` |
+
+A span colored red in any category indicates a `status: fail`. Retries appear as stacked sub-rows under the originating call, so you can see every attempt without losing context.
+
+## Example Timeline
+
+The waterfall below shows a typical multi-agent pipeline — planning, research, coding, and review — with a JSON-parsing failure that triggered three automatic retries at the end.
+
+```
+planner    ├─ planner.plan          ████░░░░░░░░░░░░░░░░░░  412 ms   ✓
+researcher │  ├─ researcher.search_docs  ████████████░░░░░░░░  890 ms   ✓
+           │  └─ researcher.rerank       ████░░░░░░░░░░░░░░░░  320 ms   ✓
+coder      │     ├─ coder.write_diff     ████████████████░░░░ 1280 ms   ✓
+           │     └─ coder.run_tests      ████████░░░░░░░░░░░░  640 ms   ✓
+reviewer   │        └─ reviewer.parse_json ×3   ████████████░ 1140 ms   ✗
+```
+
+The `reviewer.parse_json` span ran three times — all three attempts are visible as a retry group — and all three returned `status: fail`. Clicking into that span immediately shows you the error message, the exact model output that failed to parse, and the cumulative token cost of all three attempts.
+
+## How to Read a Trace
+
+<Steps>
+  <Step title="Open a trace">
+    Navigate to the **Traces** tab in the [Veritrix dashboard](https://app.veritrix.xyz) and click any row to open the waterfall view for that run.
+  </Step>
+  <Step title="Scan the timeline">
+    Look for wide bars (slow spans), red bars (failed spans), and clusters of retries (stacked yellow rows). These are your first signals of where to dig.
+  </Step>
+  <Step title="Expand nested agents">
+    Click the triangle next to any `agent.handoff` span to expand or collapse its child spans. This lets you focus on one agent's work without losing the broader context.
+  </Step>
+  <Step title="Click into a span">
+    Click any span row to open the **Span Detail** drawer on the right. The drawer shows:
+    - `span_name`, `duration_ms`, `status`
+    - `input_tokens`, `output_tokens`, and cost
+    - Full input payload and model output
+    - `error` message if `status: fail`
+  </Step>
+</Steps>
+
+## Searching and Filtering Traces
+
+Use the search bar at the top of the **Traces** list to filter by any of the following:
+
+- **`trace_id`** — paste a full or partial ID to jump directly to a run
+- **Status** — filter to `ok` or `fail` to focus on erroring runs
+- **Agent name** — type any agent name to see only traces that involved it
+- **Date range** — pick a window using the time picker
+- **Cost** — use the cost filter to surface only runs above a spend threshold
+
+<Tip>
+  Combine filters freely. For example, filtering to `status: fail` + the last 24 hours + a specific agent name is the fastest way to triage a production regression.
+</Tip>
+
+## Span Detail: Full Payload Inspection
+
+When you click a span, the drawer gives you the complete record for that operation.
+
+```json
+{
+  "span_name": "reviewer.parse_json",
+  "duration_ms": 380,
+  "input_tokens": 1042,
+  "output_tokens": 87,
+  "status": "fail",
+  "error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+}
+```
+
+For `llm.call` spans, you'll also see the verbatim prompt sent to the model and the verbatim completion returned — nothing is summarized or truncated.
+
+## Sharing a Trace Permalink
+
+Every trace has a stable, shareable URL. To copy it:
+
+1. Open the trace in the waterfall view.
+2. Click the **Share** icon in the top-right corner of the trace header.
+3. Copy the permalink.
+
+Anyone with access to your Veritrix project can open that link and see the same interactive waterfall, including all span details. Permalinks work for individual spans too — click **Share** inside any open Span Detail drawer to get a link that opens directly to that span.
+
+<Note>
+  Trace permalinks respect your project's data-retention window. Links to traces older than your plan's retention period will return a 404. Upgrade to Team or Enterprise to extend retention.
+</Note>

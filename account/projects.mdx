@@ -1,0 +1,106 @@
+---
+title: "Projects: Organize Veritrix Traces by Agent System"
+sidebarTitle: "Projects"
+description: "Learn how Veritrix projects work, how to create and switch between them, per-plan limits, and best practices for structuring projects across environments."
+---
+
+A project is the top-level container for all traces that belong to a single agent system or deployment environment. Every trace your SDK emits is recorded inside exactly one project, so projects are the primary way you filter, search, and organize observability data in the Veritrix dashboard. Think of a project as an isolated namespace — traces in one project are never visible from another.
+
+## What is a project?
+
+When you call `trace.init()` in the SDK, you pass a project name as the first argument. Veritrix uses that string to route the trace to the matching project in your account. If no project with that name exists, the trace is dropped and a warning appears in the dashboard.
+
+```python
+from veritrix import trace
+
+trace.init("checkout-agent")   # traces go to the "checkout-agent" project
+```
+
+The project name in `trace.init()` must match the **Project Name** shown in the dashboard exactly (case-sensitive).
+
+---
+
+## Create a project
+
+<Steps>
+  <Step title="Open the New Project dialog">
+    In the [Veritrix dashboard](https://app.veritrix.xyz), click the **+ New Project** button in the left sidebar.
+  </Step>
+  <Step title="Name your project">
+    Enter a short, URL-safe name that describes the agent system — for example, `checkout-agent`, `research-crew`, or `support-bot-prod`. You can rename it later.
+  </Step>
+  <Step title="Save and copy the project name">
+    Click **Create project**. Copy the exact project name shown — you'll use it in `trace.init()`.
+  </Step>
+  <Step title="Instrument your agent">
+    Pass the project name to `trace.init()` in your agent code and deploy. Traces will start appearing in the dashboard within seconds.
+  </Step>
+</Steps>
+
+<Tip>
+  Use lowercase letters, numbers, and hyphens for project names. This keeps them easy to type in code and avoids any case-mismatch issues across environments.
+</Tip>
+
+---
+
+## Project limits by plan
+
+| Plan | Projects allowed |
+|---|---|
+| **Free** | 1 |
+| **Team** | Unlimited |
+| **Enterprise** | Unlimited |
+
+<Note>
+  Free plan accounts are limited to a single project. If you need to observe multiple agent systems or separate production from staging traces, upgrade to the Team plan to unlock unlimited projects.
+</Note>
+
+---
+
+## Switch between projects
+
+All projects in your account are listed in the left sidebar of the dashboard. Click any project name to switch to it — the trace list, search filters, and alert rules all update to show data for the selected project.
+
+You can also pin frequently used projects to the top of the sidebar by hovering over the project name and clicking the **pin** icon.
+
+---
+
+## Best practices
+
+Following a consistent project structure from the start makes it much easier to filter traces, set project-specific alerts, and share context with teammates.
+
+**One project per agent system.** Each logically distinct agent pipeline — your checkout agent, your research crew, your support bot — should have its own project. Mixing multiple systems in one project makes traces hard to filter and alerts hard to tune.
+
+**Separate environments.** Create distinct projects for production, staging, and local development. For example:
+
+```
+checkout-agent-prod
+checkout-agent-staging
+checkout-agent-dev
+```
+
+This ensures production alerts aren't triggered by noisy development traces, and makes it immediately clear which environment a trace came from.
+
+**Match the project name to your repository or service name.** Aligning project names with your existing naming conventions (repo slugs, Kubernetes service names, etc.) reduces cognitive overhead when correlating traces with deployments.
+
+---
+
+## Delete a project
+
+<Warning>
+  Deleting a project permanently deletes **all traces** stored inside it. This action cannot be undone. Export any traces you want to keep before proceeding.
+</Warning>
+
+<Steps>
+  <Step title="Open Project settings">
+    Select the project in the sidebar, then click the **Settings** tab at the top of the page.
+  </Step>
+  <Step title="Scroll to the Danger Zone">
+    At the bottom of the Settings page, find the **Danger Zone** section.
+  </Step>
+  <Step title="Confirm deletion">
+    Click **Delete project**, type the project name to confirm, then click **Delete permanently**.
+  </Step>
+</Steps>
+
+Once deleted, any agent code still calling `trace.init()` with that project name will have its traces silently dropped until you create a new project with the same name or update the name in your code.

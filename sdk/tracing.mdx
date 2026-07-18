@@ -1,0 +1,95 @@
+---
+title: "Automatic Tracing with the Veritrix SDK — Span Types"
+sidebarTitle: "Tracing"
+description: "Understand what Veritrix captures automatically after trace.init() — span types, span payload fields, and trace-level metadata for every agent run."
+---
+
+Once you call `trace.init()`, Veritrix silently instruments your agent runtime without any additional code. Every LLM call, tool execution, and agent handoff produces a structured span that appears in your Veritrix dashboard in real time. There is nothing else to configure.
+
+## Auto-instrumented span types
+
+Veritrix captures four span types out of the box. You do not need to create, open, or close spans manually.
+
+<AccordionGroup>
+  <Accordion title="llm.call — LLM invocations">
+    Emitted for every call made to a large language model. Captures the full
+    prompt, the completion, input and output token counts, wall-clock latency,
+    and the final status of the call.
+  </Accordion>
+  <Accordion title="tool.exec — Tool and function calls">
+    Emitted whenever an agent invokes a tool or function (web search, code
+    execution, database lookup, etc.). Captures the tool name, the input
+    arguments, the return value, and latency.
+  </Accordion>
+  <Accordion title="agent.handoff — Agent-to-agent transfers">
+    Emitted when one agent passes control to another — for example, a
+    coordinator delegating a subtask to a specialist agent. Captures the source
+    agent, the target agent, and the payload passed between them.
+  </Accordion>
+  <Accordion title="llm.retry — Retried LLM calls">
+    Emitted for each retry of a failed LLM call. Captures the retry count,
+    the error that triggered the retry, and the final outcome so you can
+    diagnose reliability issues without noise in your `llm.call` spans.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  No manual span creation is needed. Veritrix instruments your agent
+  automatically as long as `trace.init()` has been called before any agent
+  code runs.
+</Note>
+
+## Span payload fields
+
+Every span — regardless of type — carries the following fields.
+
+| Field | Type | Description |
+|---|---|---|
+| `span` | string | Human-readable span name (e.g. `"planner.plan"`, `"reviewer.parse_json"`). |
+| `duration_ms` | integer | Wall-clock duration of the operation in milliseconds. |
+| `input_tokens` | integer | Number of tokens in the prompt. Populated on `llm.call` and `llm.retry` spans only. |
+| `output_tokens` | integer | Number of tokens in the completion. Populated on `llm.call` and `llm.retry` spans only. |
+| `status` | string | Outcome of the operation: `"ok"` or `"fail"`. |
+| `error` | string | Error message when `status` is `"fail"`; absent otherwise. |
+
+## Example span payload
+
+The JSON below is a real `llm.call` span from a reviewer agent that failed to parse a model response.
+
+```json
+{
+  "span": "reviewer.parse_json",
+  "duration_ms": 1140,
+  "input_tokens": 1872,
+  "output_tokens": 1248,
+  "status": "fail",
+  "error": "JSONDecodeError at line 3"
+}
+```
+
+<Tip>
+  Filter your dashboard by `status: fail` to quickly surface all erroring spans
+  across every agent in a project.
+</Tip>
+
+## Trace-level metadata
+
+In addition to individual spans, Veritrix attaches metadata to the top-level trace that groups all spans from a single agent run.
+
+| Field | Description |
+|---|---|
+| `trace_id` | Unique hexadecimal identifier for the trace. Use this to correlate logs from your own systems with a specific run. |
+| `span_count` | Total number of spans captured in the trace. |
+| `duration` | End-to-end wall-clock time for the entire agent run, in milliseconds. |
+| `tokens` | Sum of all `input_tokens` and `output_tokens` across every LLM span in the trace. |
+| `cost` | Estimated cost for the trace based on model pricing (where available). |
+
+## Viewing traces in the dashboard
+
+Open [app.veritrix.xyz](https://app.veritrix.xyz) and select your project. The **Traces** tab lists every run in reverse chronological order. Click any trace to see a waterfall view of its spans, token usage, and error details.
+
+<Warning>
+  Traces are streamed to the dashboard in real time, but the dashboard may
+  buffer up to 5 seconds under high ingest load. If a trace does not appear
+  immediately, wait a moment and refresh.
+</Warning>

@@ -1,0 +1,178 @@
+---
+title: "Quickstart: Get Your First Agent Trace in 10 Seconds"
+sidebarTitle: "Quickstart"
+description: "Install the Veritrix SDK, add two lines to your agent code, and see a full trace waterfall in the dashboard — all in under a minute."
+---
+
+Getting your first trace into Veritrix takes about ten seconds of actual coding. You install one package, call one function, and every LLM call, tool execution, and agent handoff in your pipeline starts flowing into the dashboard automatically. This guide walks you through the full setup from account creation to your first live trace.
+
+<Steps>
+  <Step title="Create your free account">
+    Go to [app.veritrix.xyz](https://app.veritrix.xyz) and sign up. The Free tier gives you one project, 10,000 traced events per month, and 7-day retention — no credit card required.
+
+    <Tip>
+      If you're setting up Veritrix for a team, start with the 14-day Team trial so you can explore alerting and multi-seat access from day one.
+    </Tip>
+
+    Once you're logged in, create a new project and copy your **API key** from the project settings page.
+  </Step>
+  <Step title="Install the SDK">
+    Install the Veritrix SDK into your Python environment.
+
+    ```bash
+    pip install veritrix
+    ```
+
+    Veritrix requires Python 3.8 or later. It works with all major agent frameworks out of the box — no additional adapters needed.
+  </Step>
+  <Step title="Initialize tracing in your agent">
+    Add two lines at the entry point of your agent — before any LLM calls are made. Pass your project name to `trace.init` so spans are grouped correctly in the dashboard.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("my-agent")
+    ```
+
+    If you want to pass your API key explicitly (for example, in a CI environment), use the `api_key` parameter:
+
+    ```python
+    from veritrix import trace
+
+    trace.init("my-agent", api_key="vx-your-api-key-here")
+    ```
+
+    <Note>
+      You can also set your API key via the `VERITRIX_API_KEY` environment variable and omit the `api_key` argument entirely — the SDK picks it up automatically.
+    </Note>
+  </Step>
+  <Step title="Run your agent">
+    Run your agent exactly as you normally would. Veritrix instruments in the background — there's nothing else to change.
+
+    <CodeGroup>
+      ```python OpenAI Agents SDK
+      from veritrix import trace
+      from agents import Agent, Runner
+
+      trace.init("research-agent")
+
+      agent = Agent(name="ResearchAgent", instructions="You are a helpful research assistant.")
+      result = Runner.run_sync(agent, "Summarise the latest news on LLM reliability.")
+      print(result.final_output)
+      ```
+
+      ```python LangChain
+      from veritrix import trace
+      from langchain.agents import initialize_agent, load_tools
+      from langchain.llms import OpenAI
+
+      trace.init("langchain-agent")
+
+      llm = OpenAI(temperature=0)
+      tools = load_tools(["serpapi", "llm-math"], llm=llm)
+      agent = initialize_agent(tools, llm, agent="zero-shot-react-description")
+      agent.run("What is the square root of the number of days in a leap year?")
+      ```
+
+      ```python CrewAI
+      from veritrix import trace
+      from crewai import Crew, Agent, Task
+
+      trace.init("crewai-pipeline")
+
+      researcher = Agent(role="Researcher", goal="Find accurate information", backstory="You are a diligent researcher.")
+      task = Task(description="Research OpenTelemetry best practices.", agent=researcher)
+      crew = Crew(agents=[researcher], tasks=[task])
+      crew.kickoff()
+      ```
+    </CodeGroup>
+  </Step>
+  <Step title="View your traces in the dashboard">
+    Open [app.veritrix.xyz](https://app.veritrix.xyz) and navigate to your project. You'll see a live trace waterfall showing every span from your agent run.
+
+    Each trace entry shows:
+    - **Span name** — the operation that ran (e.g. `planner.plan`, `researcher.search_docs`)
+    - **Duration** — how long the span took in milliseconds
+    - **Token counts** — input and output tokens consumed
+    - **Status** — `ok`, `fail`, or `retry`
+    - **Payload** — the full input and output for inspection
+
+    Here's an example of what a completed trace looks like in the API and dashboard:
+
+    ```json
+    {
+      "trace_id": "0x9f3a·b21e·c704",
+      "span_count": 6,
+      "duration_ms": 4812,
+      "total_tokens": 7052,
+      "cost_usd": 0.083,
+      "spans": [
+        {
+          "span": "planner.plan",
+          "duration_ms": 412,
+          "input_tokens": 487,
+          "output_tokens": 325,
+          "status": "ok"
+        },
+        {
+          "span": "researcher.search_docs",
+          "duration_ms": 890,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "status": "ok"
+        },
+        {
+          "span": "researcher.rerank",
+          "duration_ms": 320,
+          "input_tokens": 384,
+          "output_tokens": 256,
+          "status": "ok"
+        },
+        {
+          "span": "coder.write_diff",
+          "duration_ms": 1280,
+          "input_tokens": 1488,
+          "output_tokens": 992,
+          "status": "ok"
+        },
+        {
+          "span": "coder.run_tests",
+          "duration_ms": 640,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "status": "ok"
+        },
+        {
+          "span": "reviewer.parse_json ×3",
+          "duration_ms": 1140,
+          "input_tokens": 1872,
+          "output_tokens": 1248,
+          "status": "fail",
+          "error": "JSONDecodeError at line 3"
+        }
+      ]
+    }
+    ```
+
+    When a span fails, Veritrix generates a plain-language root-cause summary — for example:
+
+    > *Reviewer failed to parse Coder's output as JSON on all 3 retries. The Coder's tool schema expects `diff: string`, but it returned `diff: object`.*
+
+    <Tip>
+      Click any span in the waterfall to inspect its full payload — the exact prompt sent to the model, the raw tool input and output, and any error details.
+    </Tip>
+  </Step>
+</Steps>
+
+## Next steps
+
+Now that you have tracing running, explore the rest of the platform:
+
+<CardGroup cols={2}>
+  <Card title="How It Works" icon="gears" href="/how-it-works">
+    Understand the three-phase Instrument → Trace → Diagnose model and what Veritrix captures automatically.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/openai-agents-sdk">
+    Set up framework-specific instrumentation for OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, and more.
+  </Card>
+</CardGroup>

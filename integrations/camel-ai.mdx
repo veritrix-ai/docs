@@ -1,0 +1,156 @@
+---
+title: "CAMEL-AI Integration with Veritrix Agent Observability"
+sidebarTitle: "CAMEL-AI"
+description: "Trace CAMEL-AI multi-agent role-playing systems automatically with Veritrix. Capture every LLM call, agent message, tool use, and task step in real time."
+---
+
+Veritrix integrates with CAMEL-AI's communicative agent framework to give you full visibility into multi-agent role-playing conversations, task decomposition pipelines, and tool-augmented agents. After a single call to `trace.init()`, every message exchange between agents, every LLM call, and every tool invocation is captured as a structured trace — allowing you to analyze conversation quality, measure per-agent cost and latency, and debug complex multi-agent workflows without changing any of your agent definitions.
+
+## Prerequisites
+
+- Python 3.10 or higher
+- An active [Veritrix account](https://app.veritrix.xyz) and API key
+- CAMEL-AI installed
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Install Veritrix and CAMEL-AI">
+    ```bash
+    pip install veritrix camel-ai
+    ```
+
+    To include CAMEL-AI's optional tool and model integrations, install the extras you need:
+
+    ```bash
+    pip install "camel-ai[all]"
+    ```
+  </Step>
+
+  <Step title="Initialize Veritrix tracing">
+    Call `trace.init()` once at application startup, before you instantiate any agents or models.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("camel-agent")
+    ```
+  </Step>
+
+  <Step title="Use CAMEL-AI agents as normal">
+    Veritrix instruments the CAMEL-AI agent runtime automatically. Your role assignments, system messages, and conversation loops remain unchanged.
+
+    ```python
+    from camel.agents import ChatAgent
+    from veritrix import trace
+
+    trace.init("camel-agent")
+    # Your CAMEL agents run normally
+    ```
+  </Step>
+</Steps>
+
+## Example: Single ChatAgent
+
+The following example creates a single CAMEL `ChatAgent` with a custom role and runs a one-turn conversation. Veritrix records the full LLM call, including the system prompt, user message, and model response.
+
+```python
+from camel.agents import ChatAgent
+from camel.messages import BaseMessage
+from camel.models import ModelFactory
+from camel.types import ModelType, ModelPlatformType
+from veritrix import trace
+
+trace.init("camel-agent")
+
+model = ModelFactory.create(
+    model_platform=ModelPlatformType.OPENAI,
+    model_type=ModelType.GPT_4O,
+)
+
+system_msg = BaseMessage.make_assistant_message(
+    role_name="Python Expert",
+    content="You are an expert Python developer who writes clean, well-documented code.",
+)
+
+agent = ChatAgent(system_message=system_msg, model=model)
+
+user_msg = BaseMessage.make_user_message(
+    role_name="Developer",
+    content="Write a Python decorator that logs the execution time of any function.",
+)
+
+response = agent.step(user_msg)
+print(response.msg.content)
+```
+
+## Example: Role-Playing Multi-Agent Conversation
+
+For CAMEL's signature role-playing setup — where two agents collaborate toward a shared task — Veritrix traces every turn of the conversation and links each agent's messages within the same trace.
+
+```python
+from camel.agents import ChatAgent
+from camel.messages import BaseMessage
+from camel.models import ModelFactory
+from camel.types import ModelType, ModelPlatformType
+from veritrix import trace
+
+trace.init("camel-roleplaying")
+
+model = ModelFactory.create(
+    model_platform=ModelPlatformType.OPENAI,
+    model_type=ModelType.GPT_4O,
+)
+
+# AI user drives the task
+ai_user_sys_msg = BaseMessage.make_assistant_message(
+    role_name="Product Manager",
+    content="You are a product manager who asks a developer to build specific features.",
+)
+
+# AI assistant implements it
+ai_assistant_sys_msg = BaseMessage.make_assistant_message(
+    role_name="Python Developer",
+    content="You are a Python developer who implements features requested by the product manager.",
+)
+
+ai_user = ChatAgent(system_message=ai_user_sys_msg, model=model)
+ai_assistant = ChatAgent(system_message=ai_assistant_sys_msg, model=model)
+
+# Kick off the conversation
+init_msg = BaseMessage.make_user_message(
+    role_name="Product Manager",
+    content="Build a Python function that validates email addresses using regex.",
+)
+
+input_msg = init_msg
+for _ in range(3):  # Run for 3 turns
+    assistant_response = ai_assistant.step(input_msg)
+    user_response = ai_user.step(assistant_response.msg)
+    input_msg = user_response.msg
+    print(f"Assistant: {assistant_response.msg.content}\n")
+    print(f"User: {user_response.msg.content}\n")
+```
+
+## What Gets Captured Automatically
+
+| Signal | Details |
+|---|---|
+| **LLM calls** | Model name, system prompt, user message, completion, token counts, latency |
+| **Tool calls** | Tool name, input arguments, output, duration |
+| **Agent messages** | Role name, message content, conversation turn index |
+| **Agent handoffs** | Source role, target role, message passed |
+| **Task steps** | Step description, assigned agent, output |
+| **Retries** | Retry count, error type, backoff applied |
+
+<Note>
+  Each agent in a role-playing session is represented as a distinct entity in Veritrix, so you can filter traces by role name and compare the behavior of individual agents across multiple runs.
+</Note>
+
+## OpenTelemetry Compatibility
+
+Veritrix is built on [OpenTelemetry](https://opentelemetry.io), so every span it emits for your CAMEL-AI workflows is a fully compliant OTel span. You can export these spans to any OTel-compatible backend — whether you run Jaeger, Grafana Tempo, Honeycomb, or your own collector — without any additional setup.
+
+<Tip>
+  To route Veritrix traces to a custom OTel exporter or integrate them with an existing observability stack, see the [OpenTelemetry integration page](/integrations/opentelemetry).
+</Tip>

@@ -1,0 +1,96 @@
+{
+  "projectType": "saas",
+  "projectName": "Veritrix",
+  "projectDescription": "Veritrix is an AI agent observability platform that traces, replays, and diagnoses failures across multi-agent systems — like Datadog, but purpose-built for AI agents.",
+  "theme": "luma",
+  "primaryColor": "#0bd0ea",
+  "lightColor": "#040e16",
+  "darkColor": "#d4d4d6",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/traces-and-spans",
+              "concepts/agents-and-handoffs",
+              "concepts/root-cause-summaries",
+              "concepts/cost-tracking"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/openai-agents-sdk",
+              "integrations/langchain-langgraph",
+              "integrations/crewai",
+              "integrations/autogen",
+              "integrations/llamaindex",
+              "integrations/camel-ai",
+              "integrations/opentelemetry"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/trace-waterfall",
+              "features/time-travel-replay",
+              "features/alerting",
+              "features/audit-export"
+            ]
+          },
+          {
+            "group": "Account & Billing",
+            "pages": [
+              "account/plans-and-pricing",
+              "account/projects",
+              "account/data-retention"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDK Reference",
+        "groups": [
+          {
+            "group": "Python SDK",
+            "pages": [
+              "sdk/installation",
+              "sdk/initialization",
+              "sdk/tracing",
+              "sdk/configuration"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-agent trace waterfall — full timeline across every agent and span",
+    "Time-travel replay — rewind to any decision and inspect exact inputs/outputs",
+    "Root-cause summaries — plain-language diagnosis of what broke and why",
+    "Token & cost tracking — per-agent, per-span cost attribution",
+    "Alerting on failure patterns — Slack, PagerDuty, or webhook notifications",
+    "Audit-grade export — PDF or CSV with timestamps and provenance hashes",
+    "OpenTelemetry-native — no lock-in, works with any OTel-compatible runtime",
+    "Framework integrations — LangChain, CrewAI, AutoGen, OpenAI Agents SDK, LlamaIndex, CAMEL-AI"
+  ],
+  "publicApiSurface": [
+    "pip install veritrix",
+    "from veritrix import trace",
+    "trace.init(agent_name)",
+    "trace spans: llm.call, tool.exec, agent.handoff, llm.retry",
+    "Span payload fields: span, duration_ms, input_tokens, output_tokens, status, error",
+    "Trace metadata: trace_id, span_count, duration, tokens, cost"
+  ]
+}

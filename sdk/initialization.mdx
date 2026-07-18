@@ -1,0 +1,115 @@
+---
+title: "Initialize the Veritrix SDK in Your Python Project"
+sidebarTitle: "Initialization"
+description: "Call trace.init() once at startup to activate automatic tracing across all LLM calls, tool executions, and agent handoffs in your Veritrix project."
+---
+
+Initializing Veritrix takes a single function call. Import the `trace` module, call `trace.init()` with your project name before any agent code runs, and the SDK automatically instruments every LLM call, tool execution, and agent handoff from that point forward.
+
+## Quickstart
+
+```python
+from veritrix import trace
+
+trace.init("checkout-agent")
+
+# Your agent code runs here — everything is captured automatically.
+```
+
+<Note>
+  Call `trace.init()` **once**, as early as possible in your application — before
+  any agent logic, LLM calls, or framework setup. Calling it more than once in
+  the same process is a no-op after the first call.
+</Note>
+
+## Step-by-step setup
+
+<Steps>
+  <Step title="Import the trace module">
+    Add the import at the top of your entry-point file.
+
+    ```python
+    from veritrix import trace
+    ```
+  </Step>
+  <Step title="Call trace.init()">
+    Pass your project name as the first argument. The name must match the project you created in the Veritrix dashboard.
+
+    ```python
+    trace.init("checkout-agent")
+    ```
+  </Step>
+  <Step title="Run your agent">
+    Start your agent as normal. No further changes are needed — Veritrix captures all activity automatically.
+
+    ```python
+    result = agent.run("Process the latest order queue")
+    ```
+  </Step>
+</Steps>
+
+## Parameter reference
+
+<ParamField path="name" type="str" required>
+  The project or agent name as it appears in your Veritrix dashboard. Use a
+  short, descriptive slug (e.g. `"checkout-agent"`, `"support-bot"`). Names
+  are case-sensitive.
+</ParamField>
+
+<ParamField path="api_key" type="str">
+  Your Veritrix API key. If omitted, the SDK reads the `VERITRIX_API_KEY`
+  environment variable. Passing the key directly is convenient during local
+  development, but use the environment variable in production so credentials
+  never appear in source code.
+</ParamField>
+
+<ParamField path="endpoint" type="str">
+  A custom OpenTelemetry (OTel) exporter endpoint. Defaults to the Veritrix
+  cloud ingest endpoint. Set this only if you are self-hosting an OTel
+  collector or running Veritrix in an enterprise on-premises deployment.
+</ParamField>
+
+<ParamField path="debug" type="bool" default="False">
+  When `True`, the SDK logs every span payload to `stdout` as it is emitted.
+  Useful for local troubleshooting. **Do not enable in production** — it
+  produces high-volume output and may expose sensitive prompt content.
+</ParamField>
+
+## Use environment variables (recommended)
+
+Storing your API key in an environment variable keeps credentials out of your codebase and makes rotating keys easy.
+
+```bash
+export VERITRIX_API_KEY="vx-your-api-key-here"
+```
+
+With the variable set, you can call `trace.init()` without an explicit `api_key` argument:
+
+```python
+from veritrix import trace
+
+trace.init("checkout-agent")  # API key loaded automatically from VERITRIX_API_KEY
+```
+
+<Tip>
+  In containerised deployments, inject `VERITRIX_API_KEY` as a secret
+  environment variable through your orchestration platform (e.g. Kubernetes
+  Secrets, Docker secrets, or your CI/CD provider's secret store).
+</Tip>
+
+## Full example with all parameters
+
+```python
+from veritrix import trace
+
+trace.init(
+    "checkout-agent",
+    api_key="vx-your-api-key-here",   # omit in production — use env var
+    endpoint="http://my-collector:4317",  # only for custom OTel collectors
+    debug=True,                           # only for local debugging
+)
+```
+
+## Get your API key
+
+If you do not yet have an API key, sign in to the [Veritrix dashboard](https://app.veritrix.xyz), go to **Settings → API Keys**, and create a new key. See the [Installation](/sdk/installation) page for a detailed walkthrough.

@@ -1,0 +1,144 @@
+---
+title: "Microsoft AutoGen Integration with Veritrix Tracing"
+sidebarTitle: "AutoGen"
+description: "Trace Microsoft AutoGen multi-agent conversations automatically with Veritrix. Capture every LLM call, tool use, and agent message exchange end to end."
+---
+
+Veritrix brings full observability to Microsoft AutoGen's multi-agent conversation framework with a single initialization call. Once you call `trace.init()`, Veritrix automatically instruments every agent conversation turn, LLM invocation, tool execution, and reply chain across your entire AutoGen pipeline — so you can diagnose runaway loops, measure per-agent costs, and understand exactly how your agents collaborate to reach a final answer.
+
+## Prerequisites
+
+- Python 3.10 or higher
+- An active [Veritrix account](https://app.veritrix.xyz) and API key
+- AutoGen installed (`pyautogen` or the newer `autogen-agentchat` package)
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Install Veritrix and AutoGen">
+    ```bash
+    pip install veritrix pyautogen
+    ```
+
+    If you are using the newer AutoGen AgentChat API, install `autogen-agentchat` instead:
+
+    ```bash
+    pip install veritrix autogen-agentchat
+    ```
+  </Step>
+
+  <Step title="Initialize Veritrix tracing">
+    Call `trace.init()` once at application startup, before you define any agents or start any conversations.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("autogen-pipeline")
+    ```
+  </Step>
+
+  <Step title="Use AutoGen as normal">
+    Veritrix patches AutoGen's conversation runtime automatically. Your agent definitions and conversation logic remain unchanged.
+
+    ```python
+    import autogen
+    from veritrix import trace
+
+    trace.init("autogen-pipeline")
+    # Your AutoGen agents run normally
+    ```
+  </Step>
+</Steps>
+
+## Example: Two-Agent Conversation
+
+The following example sets up a classic AutoGen pattern — an assistant agent and a user proxy — to collaboratively solve a coding problem. Veritrix traces every message exchange and LLM call in the conversation.
+
+```python
+import autogen
+from veritrix import trace
+
+trace.init("autogen-pipeline")
+
+config_list = [{"model": "gpt-4o", "api_key": "YOUR_OPENAI_API_KEY"}]
+
+assistant = autogen.AssistantAgent(
+    name="assistant",
+    llm_config={"config_list": config_list},
+    system_message="You are a helpful AI assistant that writes clean Python code.",
+)
+
+user_proxy = autogen.UserProxyAgent(
+    name="user_proxy",
+    human_input_mode="NEVER",
+    max_consecutive_auto_reply=5,
+    code_execution_config={"work_dir": "coding", "use_docker": False},
+)
+
+user_proxy.initiate_chat(
+    assistant,
+    message="Write a Python function that returns the nth Fibonacci number using memoization.",
+)
+```
+
+## Example: Group Chat with Multiple Agents
+
+For GroupChat pipelines, Veritrix traces each agent's contribution and the manager's routing decisions.
+
+```python
+import autogen
+from veritrix import trace
+
+trace.init("groupchat-pipeline")
+
+config_list = [{"model": "gpt-4o", "api_key": "YOUR_OPENAI_API_KEY"}]
+llm_config = {"config_list": config_list}
+
+planner = autogen.AssistantAgent(name="planner", llm_config=llm_config,
+    system_message="You break problems into clear subtasks.")
+
+executor = autogen.AssistantAgent(name="executor", llm_config=llm_config,
+    system_message="You implement solutions for the subtasks the planner defines.")
+
+critic = autogen.AssistantAgent(name="critic", llm_config=llm_config,
+    system_message="You review solutions and suggest improvements.")
+
+user_proxy = autogen.UserProxyAgent(
+    name="user_proxy",
+    human_input_mode="NEVER",
+    max_consecutive_auto_reply=1,
+)
+
+groupchat = autogen.GroupChat(
+    agents=[planner, executor, critic, user_proxy],
+    messages=[],
+    max_round=6,
+)
+
+manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+
+user_proxy.initiate_chat(manager, message="Build a REST API endpoint that returns weather data.")
+```
+
+## What Gets Captured Automatically
+
+| Signal | Details |
+|---|---|
+| **LLM calls** | Model name, messages, completion, token counts, latency per agent |
+| **Tool / function calls** | Function name, arguments, return value, duration |
+| **Conversation turns** | Speaker, message content, reply chain depth |
+| **Agent handoffs** | Routing decisions in GroupChat, receiving agent |
+| **Code execution** | Code block submitted, stdout/stderr, exit code |
+| **Retries** | Retry count, error type, consecutive auto-reply counter |
+
+<Note>
+  Veritrix captures the full conversation history attached to each trace, making it easy to replay and audit long multi-agent exchanges directly from the dashboard.
+</Note>
+
+## OpenTelemetry Compatibility
+
+Veritrix is built natively on [OpenTelemetry](https://opentelemetry.io). Every span generated for your AutoGen pipelines is a standard OTel span that can be exported to any OTel-compatible collector — Jaeger, Honeycomb, Grafana Tempo, or your own backend — without any extra configuration.
+
+<Tip>
+  To route traces to a custom OTel exporter or an existing observability stack, see the [OpenTelemetry integration page](/integrations/opentelemetry).
+</Tip>

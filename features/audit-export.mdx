@@ -1,0 +1,100 @@
+---
+title: "Audit Export: Immutable Records for Every Decision"
+sidebarTitle: "Audit Export"
+description: "Export any session as a tamper-evident PDF or CSV — with timestamps, token counts, costs, and cryptographic hashes — for compliance and audit."
+---
+
+Audit Export gives you a portable, tamper-evident record of everything your agents did during a session. Every exported file contains the complete chain of spans — including the exact inputs, outputs, token counts, costs, and error messages — alongside cryptographic hashes that let a reviewer verify the record has not been altered since it was produced. Whether you're preparing for a SOC 2 audit, responding to a HIPAA compliance review, or simply giving a fintech compliance team the evidence they need, you can produce the full trace record in one click.
+
+## What an Export Contains
+
+Every exported file includes the following fields for each span in the trace:
+
+| Field | Description |
+|---|---|
+| `trace_id` | Unique identifier for the root trace |
+| `span_name` | Name of the operation (e.g., `coder.write_diff`) |
+| `timestamp_start` | ISO 8601 UTC timestamp when the span opened |
+| `timestamp_end` | ISO 8601 UTC timestamp when the span closed |
+| `duration_ms` | Elapsed time in milliseconds |
+| `input_tokens` | Tokens in the input payload |
+| `output_tokens` | Tokens in the model or tool response |
+| `cost_usd` | Calculated cost for this span in USD |
+| `status` | `ok` or `fail` |
+| `error` | Error message, if `status: fail` |
+| `span_payload_hash` | SHA-256 hash of the full span payload for provenance verification |
+
+The `span_payload_hash` is computed over the raw span record before any formatting is applied, meaning you can independently verify the hash against the original data Veritrix stored.
+
+## Export Formats
+
+<CardGroup cols={2}>
+  <Card title="PDF" icon="file-pdf">
+    A formatted, human-readable report suitable for sharing with auditors, legal teams, or executives. Includes a cover page with the trace summary (trace ID, span count, total duration, total tokens, total cost) and a paginated table of all spans.
+  </Card>
+  <Card title="CSV" icon="file-csv">
+    A flat, machine-readable file with one row per span. Designed for import into spreadsheets, SIEM tools, or compliance platforms. Column headers match the field names in the table above.
+  </Card>
+</CardGroup>
+
+## How to Export a Single Trace
+
+<Steps>
+  <Step title="Open the trace">
+    Navigate to the **Traces** tab in the [Veritrix dashboard](https://app.veritrix.xyz) and click the trace you want to export.
+  </Step>
+  <Step title="Click Export">
+    Click the **Export** button in the top-right corner of the waterfall view.
+  </Step>
+  <Step title="Choose your format">
+    Select **PDF** or **CSV** from the dropdown.
+  </Step>
+  <Step title="Download">
+    Veritrix generates the file and begins the download immediately. The filename includes the `trace_id` and an ISO 8601 timestamp so you can identify it unambiguously in a file archive.
+  </Step>
+</Steps>
+
+## Bulk Export for a Date Range
+
+You can export all sessions within a date range without opening each trace individually.
+
+<Steps>
+  <Step title="Go to Exports">
+    Click **Exports** in the left sidebar of the dashboard.
+  </Step>
+  <Step title="Set the date range">
+    Use the date picker to select a start and end date. You can optionally filter by agent name or project.
+  </Step>
+  <Step title="Choose format and request export">
+    Select PDF or CSV and click **Request Bulk Export**. Veritrix packages all matching traces into a single compressed archive.
+  </Step>
+  <Step title="Download the archive">
+    A download link will appear in the **Exports** section of the dashboard once the archive is ready. Large exports (thousands of traces) typically complete within a few minutes.
+  </Step>
+</Steps>
+
+<Tip>
+  For recurring compliance reporting, schedule a bulk export by configuring a webhook alert that triggers a bulk export API call at the end of each reporting period. See the [alerting documentation](/features/alerting) for webhook setup instructions.
+</Tip>
+
+## Compliance and Data Residency
+
+Veritrix is designed to meet the requirements of regulated industries. The following compliance posture applies to all Audit Export features:
+
+| Standard | Status |
+|---|---|
+| SOC 2 Type II | In progress |
+| HIPAA | Ready — Business Associate Agreements available on request |
+| NIST AI RMF | Compliant — full audit trail supports Govern, Map, Measure, and Manage functions |
+
+<Note>
+  HIPAA Business Associate Agreements (BAAs) and data processing agreements are available on the **Team** and **Enterprise** plans. Contact [support@veritrix.xyz](mailto:support@veritrix.xyz) to request a BAA before storing protected health information in Veritrix traces.
+</Note>
+
+### Data Residency
+
+By default, all trace data is stored in US-East. **Enterprise** plan customers can request dedicated data residency in alternative regions to satisfy data-sovereignty requirements. Exports generated under a regional residency configuration are produced and stored entirely within the designated region.
+
+<Warning>
+  Cryptographic hashes in exported files are computed at export time using the canonical span records stored in Veritrix. If you alter the exported CSV after download, the hashes will no longer match, and the provenance chain will be broken. Treat exported files as read-only artifacts.
+</Warning>

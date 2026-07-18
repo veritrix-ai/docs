@@ -1,0 +1,89 @@
+---
+title: "Root-Cause Summaries: AI-Generated Failure Explanations"
+sidebarTitle: "Root-Cause Summaries"
+description: "Veritrix automatically generates plain-language failure explanations from trace data — not raw logs — and makes every summary shareable with one click."
+---
+
+When an agent run fails, the hardest part is rarely fixing the bug — it is finding it. Digging through nested spans, comparing retry payloads, and correlating tool errors across multiple agents is time-consuming even for the engineer who wrote the agent. For a CTO reviewing an incident or a compliance team auditing a workflow, it can be impenetrable. Veritrix solves this with **root-cause summaries**: concise, plain-language explanations of what broke and why, generated automatically from the trace data the moment a run fails.
+
+## What Are Root-Cause Summaries?
+
+A root-cause summary is an AI-generated narrative that answers three questions about a failed trace:
+
+1. **What failed?** Which span, in which agent, produced the first error.
+2. **Why did it fail?** What the error message, retry pattern, and surrounding context reveal about the underlying cause.
+3. **What is the likely fix?** A concrete, actionable suggestion drawn from the span data.
+
+Summaries are generated from structured trace data — span payloads, error fields, retry counts, token sequences, and handoff context — not from raw application logs. This means the summary reflects exactly what Veritrix observed, in the same terms your team already uses when reviewing traces.
+
+<Note>
+  Root-cause summaries are generated automatically for every trace that contains at least one span with `"status": "fail"`. You do not need to configure anything.
+</Note>
+
+## Example Summary
+
+Here is a real-world example of a root-cause summary generated from a four-agent pipeline where the reviewer repeatedly failed to parse the coder's output:
+
+> **Reviewer failed to parse Coder's output as JSON on all 3 retries.**
+> The Coder's tool schema expects `diff: string`, but it returned `diff: object`.
+> The Reviewer's parsing logic called `JSON.parse` on the `diff` field directly,
+> which threw a `TypeError: string required` on every attempt.
+> **Suggested fix:** update the Coder's tool response to serialize `diff` to a
+> JSON string before returning, or update the Reviewer's schema to accept `diff: object`.
+
+Notice that the summary names the specific field mismatch (`diff: string` vs. `diff: object`), identifies the failure pattern (3 consecutive retries, all failing for the same reason), and offers a concrete resolution path — all without requiring you to open a single span manually.
+
+## How Summaries Are Generated
+
+Veritrix analyses the following signals from the trace to construct each summary:
+
+<Steps>
+  <Step title="Locate the root failure span">
+    Veritrix identifies the earliest span with `"status": "fail"` and distinguishes it from spans that failed as a downstream consequence of that root failure.
+  </Step>
+  <Step title="Extract error context">
+    The `error` field on the failing span, along with the span's `input_tokens`, `output_tokens`, and payload, are pulled into the analysis context.
+  </Step>
+  <Step title="Analyse retry patterns">
+    If the failing span is preceded or followed by one or more `llm.retry` spans, Veritrix includes the retry count and whether any retry succeeded or all failed identically.
+  </Step>
+  <Step title="Incorporate handoff context">
+    If the failure occurred in an agent that received a handoff, Veritrix includes the handoff payload to check whether malformed data was passed from the upstream agent.
+  </Step>
+  <Step title="Generate the summary">
+    All extracted signals are passed to Veritrix's analysis model, which produces a structured summary: what failed, why it failed, and a suggested fix. The summary is stored alongside the trace and rendered in the dashboard immediately.
+  </Step>
+</Steps>
+
+## Who Are Root-Cause Summaries For?
+
+Root-cause summaries are designed to be useful to different audiences without requiring any customisation:
+
+| Audience | How they use summaries |
+|---|---|
+| **Engineers** | Jump straight to the root failure without manually walking the span tree. Use the suggested fix as a starting point for a patch. |
+| **Team leads & CTOs** | Read a one-paragraph incident summary instead of asking an engineer to explain what happened. Attach the permalink to a postmortem. |
+| **Compliance teams** | Audit a failed workflow run without needing access to application code or infrastructure. The summary and the linked trace together constitute a self-contained record. |
+
+## Shareable Trace Permalinks
+
+Every trace — and its root-cause summary — has a permanent, shareable link. You can copy the permalink from the **Copy link** button in the trace header and share it with anyone who has access to your Veritrix workspace.
+
+Permalinks are useful for:
+
+- **Incident postmortems** — link directly to the failing trace rather than pasting screenshots.
+- **Bug reports** — attach a trace link to a GitHub issue so the assignee has full context.
+- **Compliance reviews** — provide auditors with a read-only view of the trace and its summary.
+
+<Tip>
+  If you want to share a trace with someone who does not have a Veritrix account, you can generate a **public read-only link** from the sharing menu. Public links expire after 30 days by default, but you can extend or revoke them at any time.
+</Tip>
+
+<CardGroup cols={2}>
+  <Card title="Agents & Handoffs" icon="arrows-split-up-and-left" href="/concepts/agents-and-handoffs">
+    Learn how Veritrix identifies which agent in the chain caused a failure.
+  </Card>
+  <Card title="Traces & Spans" icon="chart-gantt" href="/concepts/traces-and-spans">
+    Understand the span fields and error payloads that root-cause summaries are built from.
+  </Card>
+</CardGroup>

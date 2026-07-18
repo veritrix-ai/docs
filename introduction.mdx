@@ -1,0 +1,70 @@
+---
+title: "What Is Veritrix? AI Agent Observability Explained"
+sidebarTitle: "Introduction"
+description: "Understand what Veritrix does, the problems it solves, and how it helps engineers, leaders, and compliance teams ship AI agents confidently."
+---
+
+Veritrix is an observability platform designed specifically for AI agents. It traces every decision across every agent in your pipeline — capturing LLM calls, tool executions, and agent handoffs with full inputs, outputs, token counts, and timing — and presents it all as a navigable timeline your entire team can understand. If something breaks, you replay the run, read the plain-language root-cause summary, and fix it. No log grepping required.
+
+## The problem with AI agents in production
+
+Shipping AI agents beyond a demo is hard in ways that traditional observability tools weren't built to handle.
+
+- **Hours lost to manual tracing.** Debugging a multi-agent failure means stitching together logs from multiple services, models, and tools. Engineering teams report losing an average of 4.2 hours per incident doing exactly this.
+- **Non-deterministic bugs you can't reproduce.** One in seven agent runs surfaces a failure that doesn't repeat on the next execution. Without a recorded trace, that run is gone forever.
+- **Compliance blocks that delay production.** Fintech and healthtech teams need an immutable audit trail of every agent decision before legal or security will sign off on a production deploy. Without one, you're blocked.
+
+Veritrix solves all three.
+
+## How Veritrix helps your team
+
+Different people on your team need different answers from the same trace. Veritrix is built so every stakeholder gets what they need without a separate tool.
+
+<CardGroup cols={3}>
+  <Card title="For Engineers" icon="code">
+    Replay any failed run in seconds. Every span, every payload, every retry is searchable, shareable, and permalinked. Stop grepping logs and start diagnosing.
+  </Card>
+  <Card title="For Engineering Leaders" icon="chart-line">
+    SLA-grade visibility into agent reliability, failure-pattern alerting, and per-agent cost tracking. Get the confidence to move from demo to production load.
+  </Card>
+  <Card title="For Compliance Teams" icon="shield-check">
+    An immutable record of every agent decision, exportable as PDF or CSV. Fintech- and healthtech-ready, with SOC 2 in progress, HIPAA-ready deployment, and NIST AI RMF alignment.
+  </Card>
+</CardGroup>
+
+## Feature overview
+
+Veritrix ships everything you need to run agents in production — not just a trace viewer.
+
+<CardGroup cols={2}>
+  <Card title="Multi-Agent Trace Waterfall" icon="chart-gantt" href="/features/trace-waterfall">
+    See every span across every agent on one timeline. Nested handoffs, parallel calls, and retries are all visible at a glance.
+  </Card>
+  <Card title="Time-Travel Replay" icon="clock-rotate-left" href="/features/time-travel-replay">
+    Rewind to any decision point and inspect the exact prompt, tool payload, and model output at that moment.
+  </Card>
+  <Card title="Root-Cause Summaries" icon="magnifying-glass" href="/concepts/root-cause-summaries">
+    Plain-language explanations of what broke and why — generated directly from the trace, not inferred from vibes.
+  </Card>
+  <Card title="Token & Cost Tracking" icon="coins" href="/concepts/cost-tracking">
+    Per-agent, per-span cost attribution so you can spot runaway loops and manage spend before the invoice arrives.
+  </Card>
+  <Card title="Alerting on Failure Patterns" icon="bell" href="/features/alerting">
+    Route alerts to Slack, PagerDuty, or any webhook. Trigger on rate spikes, cost anomalies, or schema drift.
+  </Card>
+  <Card title="Audit-Grade Export" icon="file-export" href="/features/audit-export">
+    One-click PDF or CSV of any session with timestamps, hashes, and full provenance for your compliance team.
+  </Card>
+</CardGroup>
+
+## OpenTelemetry-native
+
+Veritrix is built on OpenTelemetry, which means it integrates with the infrastructure you already have. You don't rip anything out — you add two lines of code and start receiving traces the same day.
+
+<Note>
+  Veritrix works natively with OpenAI Agents SDK, LangChain, LangGraph, CrewAI, AutoGen, LlamaIndex, and CAMEL-AI. See the [Integrations](/integrations) section for framework-specific setup guides.
+</Note>
+
+## Next step
+
+Ready to instrument your first agent? The [Quickstart](/quickstart) gets you from install to your first trace in under ten seconds.

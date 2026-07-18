@@ -1,0 +1,96 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Veritrix",
+  "theme": "luma",
+  "logo": {
+    "light": "https://media.brand.dev/38d058eb-8329-411e-9ca2-2903fe507d03.svg",
+    "dark": "https://media.brand.dev/38d058eb-8329-411e-9ca2-2903fe507d03.svg"
+  },
+  "favicon": "https://media.brand.dev/eae3f2f2-2655-4c54-963c-3e2ad3f93c9f.png",
+  "colors": {
+    "primary": "#0bd0ea",
+    "light": "#040e16",
+    "dark": "#d4d4d6"
+  },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Start tracing free",
+      "href": "https://app.veritrix.xyz"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/traces-and-spans",
+              "concepts/agents-and-handoffs",
+              "concepts/root-cause-summaries",
+              "concepts/cost-tracking"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/openai-agents-sdk",
+              "integrations/langchain-langgraph",
+              "integrations/crewai",
+              "integrations/autogen",
+              "integrations/llamaindex",
+              "integrations/camel-ai",
+              "integrations/opentelemetry"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/trace-waterfall",
+              "features/time-travel-replay",
+              "features/alerting",
+              "features/audit-export"
+            ]
+          },
+          {
+            "group": "Account & Billing",
+            "pages": [
+              "account/plans-and-pricing",
+              "account/projects",
+              "account/data-retention"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDK Reference",
+        "groups": [
+          {
+            "group": "Python SDK",
+            "pages": [
+              "sdk/installation",
+              "sdk/initialization",
+              "sdk/tracing",
+              "sdk/configuration"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "website": "https://www.veritrix.xyz"
+    }
+  }
+}

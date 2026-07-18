@@ -1,0 +1,100 @@
+---
+title: "How Veritrix Models Multi-Agent Chains and Handoffs"
+sidebarTitle: "Agents & Handoffs"
+description: "Learn how Veritrix captures agent handoffs, builds parent-child trace trees, and helps you pinpoint which agent in a chain caused a failure."
+---
+
+Modern AI systems rarely consist of a single agent. In practice, a planner delegates to a researcher, a researcher delegates to a coder, and a coder's output is reviewed by yet another agent before anything reaches the user. Veritrix is built for this reality. Every agent in the chain is a first-class citizen in a trace, and every time one agent passes control to another, that handoff is recorded as its own span — giving you a precise, navigable map of the entire execution.
+
+## What Is an Agent in Veritrix?
+
+In Veritrix's model, an **agent** is any autonomous process that receives an input, reasons over it (typically via one or more LLM calls), and produces an output or delegates to another agent. Agents are identified by the name you pass to `trace.init` or, in multi-agent setups, by the name declared on each agent node in your orchestration layer.
+
+Each agent owns a subtree of spans within the trace. All LLM calls, tool executions, and retries that occur while that agent is in control are nested under its root span. This means you can collapse or expand any agent's work independently when reviewing a trace.
+
+## What Is a Handoff?
+
+A **handoff** is the moment one agent transfers control — and context — to another. Veritrix captures every handoff as an `agent.handoff` span. The span records which agent is handing off, which agent is receiving control, what payload was passed between them, and how long the transfer took.
+
+Handoffs are the connective tissue of multi-agent architectures. By treating them as first-class spans, Veritrix lets you see not just what each agent did, but how agents communicated and whether the data passed between them was well-formed.
+
+## Multi-Agent Chains: The Parent-Child Trace Tree
+
+When one agent calls another, Veritrix nests the receiving agent's spans as children of the `agent.handoff` span. The result is a **parent-child trace tree** that mirrors your agent graph.
+
+Consider a four-agent pipeline:
+
+```text
+planner
+  └── agent.handoff → researcher
+        └── agent.handoff → coder
+              └── agent.handoff → reviewer
+```
+
+In the Veritrix dashboard, this renders as a waterfall where you can expand each agent's subtree to see every LLM call, tool execution, and retry that occurred while that agent was active. The top-level trace gives you the macro view; drilling into any subtree gives you the micro view.
+
+<Note>
+  All agents in a chain share the same `trace_id`. You never need to correlate separate trace files across agents — Veritrix stitches everything together automatically.
+</Note>
+
+### Example: Planner → Researcher → Coder → Reviewer
+
+Here is what the span tree looks like for a typical four-agent run:
+
+```text
+trace_id: 0x9f3a·b21e·c704
+│
+├── [llm.call]       planner.plan            412 ms   ✓
+├── [agent.handoff]  planner → researcher    2 ms     ✓
+│     ├── [llm.call]   researcher.search     891 ms   ✓
+│     ├── [tool.exec]  researcher.fetch_url  340 ms   ✓
+│     └── [agent.handoff] researcher → coder 1 ms    ✓
+│           ├── [llm.call]  coder.generate   1203 ms  ✓
+│           ├── [tool.exec] coder.run_tests   780 ms  ✓
+│           └── [agent.handoff] coder → reviewer 1 ms ✓
+│                 ├── [llm.call]  reviewer.review  654 ms  ✗
+│                 ├── [llm.retry] reviewer.review  648 ms  ✗
+│                 └── [llm.retry] reviewer.review  631 ms  ✗
+```
+
+The `✗` symbols on the reviewer's spans immediately surface that the failure occurred in the final stage — without requiring you to read any logs.
+
+## Parallel Calls and Retries
+
+Veritrix handles two common patterns that make agent traces more complex than a simple linear chain:
+
+**Parallel calls.** When an agent fans out multiple LLM or tool calls simultaneously, Veritrix records each as a sibling span with overlapping timestamps. In the waterfall view, parallel spans are rendered side-by-side so you can see their relative start times and durations at a glance.
+
+**Retries.** When an LLM call fails and is retried — whether because the model returned a malformed response, hit a rate limit, or exceeded a timeout — each attempt is recorded as an `llm.retry` span linked to the original `llm.call`. You can see exactly how many retries occurred, whether they succeeded, and how much they added to the total cost and latency.
+
+<Tip>
+  An unusually high number of `llm.retry` spans on a single agent is often a signal that the agent's prompt or output schema is misaligned with a downstream expectation. Root-cause summaries will flag this pattern automatically.
+</Tip>
+
+## Identifying Which Agent Caused a Failure
+
+When a multi-agent run fails, the last thing you want to do is grep through logs across four separate services. Veritrix gives you a faster path:
+
+<Steps>
+  <Step title="Open the trace">
+    Navigate to **Traces** in the sidebar and select the failed run. Traces with at least one failed span are marked with a red status badge.
+  </Step>
+  <Step title="Locate the first failing span">
+    The waterfall view highlights failed spans in red. Veritrix also marks the earliest failed span with a **root failure** indicator, so you can distinguish the original failure from cascading errors in downstream agents.
+  </Step>
+  <Step title="Expand the failing agent's subtree">
+    Click the parent `agent.handoff` span to expand the subtree belonging to the agent where the failure originated. You will see the full sequence of events — including any retries — that led up to the error.
+  </Step>
+  <Step title="Read the root-cause summary">
+    Every failed trace includes an AI-generated root-cause summary that explains in plain language what broke and why. Click **View summary** in the trace header to read it, or share the permalink with your team.
+  </Step>
+</Steps>
+
+<CardGroup cols={2}>
+  <Card title="Traces & Spans" icon="chart-gantt" href="/concepts/traces-and-spans">
+    Learn about the span payload fields and trace metadata that power the agent tree view.
+  </Card>
+  <Card title="Root-Cause Summaries" icon="magnifying-glass-chart" href="/concepts/root-cause-summaries">
+    See how Veritrix turns failure patterns into plain-language explanations.
+  </Card>
+</CardGroup>

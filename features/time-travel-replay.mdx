@@ -1,0 +1,91 @@
+---
+title: "Time-Travel Replay: Reproduce Any Agent Run Exactly"
+sidebarTitle: "Time-Travel Replay"
+description: "Rewind to any span in a recorded trace and inspect the exact prompt, tool payload, and model output at that precise moment in time."
+---
+
+Time-Travel Replay lets you step back inside any recorded run and examine what your agent actually saw and did at each decision point. Because Veritrix captures the complete input and output of every span — not just metadata — you can reconstruct the exact state of a conversation or tool call without rerunning anything. This is especially powerful for the class of bugs that only surface one run in seven, where your logs show a bad outcome but nothing in your code explains why.
+
+## Why Time-Travel Replay Matters
+
+Non-deterministic AI systems are notoriously hard to debug. The same prompt can produce different outputs across runs due to temperature, model updates, or upstream data changes. Traditional logging catches that something went wrong, but not what the model was actually given or what it returned. Replay solves this by recording the full payload at every span boundary.
+
+<CardGroup cols={2}>
+  <Card title="Reproduce intermittent bugs" icon="bug">
+    If a failure only happens one in seven runs, Replay lets you open the one run where it did fail and inspect it frame by frame — no need to reproduce it live.
+  </Card>
+  <Card title="Understand model behavior" icon="brain">
+    See the verbatim prompt the model received, including injected context, retrieved documents, and conversation history, not a reconstructed approximation.
+  </Card>
+  <Card title="Debug tool call errors" icon="wrench">
+    Inspect the exact JSON your agent sent to a tool and the exact response it got back — essential when an API returns an unexpected schema.
+  </Card>
+  <Card title="Compare divergent outcomes" icon="arrows-split-up-and-left">
+    Load two runs of the same agent side by side and see precisely where their inputs or outputs diverged.
+  </Card>
+</CardGroup>
+
+## What You Can Inspect
+
+Every recorded span exposes the following in the Replay view:
+
+- **Exact prompt sent to the model** — the full message array, including system prompt, conversation history, retrieved context, and any injected instructions
+- **Exact completion returned** — the verbatim model output, before any post-processing your application code applied
+- **Tool input and output** — the arguments passed to a `tool.exec` span and the response it received
+- **Retry attempts** — every `llm.retry` sub-span, with its own prompt and completion, so you can see how the input changed between attempts
+- **Token counts and cost** — `input_tokens`, `output_tokens`, and calculated cost for that span
+
+## How to Use Replay
+
+<Steps>
+  <Step title="Open a trace">
+    Go to the **Traces** tab in the [Veritrix dashboard](https://app.veritrix.xyz) and click any trace to open its waterfall.
+  </Step>
+  <Step title="Select a span">
+    Click any span row — a `llm.call`, `tool.exec`, `agent.handoff`, or `llm.retry` — to open the Span Detail drawer.
+  </Step>
+  <Step title="Switch to Replay view">
+    Click the **Replay** tab inside the drawer. You'll see the full input on the left and the full output on the right, exactly as they were at that moment in the run.
+  </Step>
+  <Step title="Step through adjacent spans">
+    Use the **← Previous** and **Next →** arrows at the top of the drawer to walk forward or backward through the trace one span at a time, in chronological order.
+  </Step>
+</Steps>
+
+<Tip>
+  For `llm.retry` spans, Replay renders each attempt as a numbered tab (Attempt 1, Attempt 2, …). You can click between them to see how the prompt was modified between retries and whether the model's output changed.
+</Tip>
+
+## Comparing Two Runs
+
+When the same agent produces different outcomes on different runs, use the **Compare** feature to find the divergence point.
+
+<Steps>
+  <Step title="Open the first trace">
+    Open a trace in the waterfall and copy its permalink from the **Share** menu.
+  </Step>
+  <Step title="Open the comparison panel">
+    In the second trace's waterfall, click **Compare** in the top-right toolbar and paste the first trace's permalink.
+  </Step>
+  <Step title="Read the diff">
+    Veritrix aligns matching spans by name and highlights differences in prompt content, tool arguments, and model output side by side. Spans that exist in one run but not the other are marked as **missing**.
+  </Step>
+</Steps>
+
+<Note>
+  Comparison is available for any two traces in the same project, regardless of when they ran — as long as both are within your plan's retention window.
+</Note>
+
+## Shareable Span Permalinks
+
+Every span inside a trace has its own stable permalink. To copy one:
+
+1. Open the Span Detail drawer for the span you want to share.
+2. Click the **Share** icon at the top of the drawer.
+3. Copy the URL.
+
+Your teammate can open that link and land directly in the Replay view for that specific span, with the full prompt and completion already loaded. This makes async debugging and incident post-mortems significantly faster — paste a span link in Slack and your colleague sees exactly what you're looking at.
+
+<Warning>
+  Span permalinks include the full prompt payload in an encrypted reference, but the contents are only accessible to users with access to the project. Do not share span links in public channels if your prompts contain sensitive data.
+</Warning>

@@ -1,0 +1,71 @@
+---
+title: "Data Retention: How Long Veritrix Stores Your Traces"
+sidebarTitle: "Data Retention"
+description: "Understand how long Veritrix retains traces on each plan, what happens when retention expires, how to export data, and Enterprise custom retention options."
+---
+
+Data retention defines how long Veritrix keeps your traces before they are automatically and permanently deleted. Once a trace reaches the end of its retention window, it is removed from storage and cannot be recovered — so it's important to understand your plan's retention period and export anything you need to keep for longer.
+
+## Retention by plan
+
+| Plan | Retention period |
+|---|---|
+| **Free** | 7 days |
+| **Team** | 30 days |
+| **Enterprise** | Custom (contact sales) |
+
+Retention is measured from the moment a trace is recorded. A trace created on January 1 on the Team plan will be permanently deleted on February 1, regardless of whether you have viewed it.
+
+---
+
+## What happens when retention expires
+
+When a trace reaches the end of its retention window, Veritrix deletes it automatically during the nightly cleanup job. Deletion is permanent and irreversible — there is no archive, soft-delete, or recovery option.
+
+<Warning>
+  Expired traces cannot be restored. If you need to keep traces for compliance, auditing, or long-term analysis, export them before the retention window closes.
+</Warning>
+
+The dashboard shows a **Expires in** countdown on any trace that will be deleted within the next 48 hours, so you have a clear signal to act before data is lost.
+
+---
+
+## Traces are immutable
+
+Once Veritrix records a trace, it cannot be edited or modified — only deleted when its retention window expires. This immutability guarantee means:
+
+- Every span, token count, cost figure, and tool call is preserved exactly as it was captured.
+- No one — including Veritrix staff — can alter a recorded trace.
+- Traces are safe to use as an audit record for the full duration of their retention window.
+
+<Note>
+  Immutability applies to the trace data itself. You can still add **tags** and **notes** to a trace in the dashboard — these are stored as metadata alongside the trace and do not modify the underlying span data.
+</Note>
+
+---
+
+## Export traces before they expire
+
+Veritrix lets you export traces on all plans in PDF and CSV format. Use the export feature to archive traces you want to retain beyond your plan's retention window, share with stakeholders outside the dashboard, or feed into external analytics tools.
+
+See [Audit & Export](/features/audit-export) for a step-by-step guide on filtering traces and exporting them in bulk.
+
+<Tip>
+  Set a recurring calendar reminder a few days before your retention window closes (for example, every 25 days on the Team plan) to review and export any traces you want to keep permanently.
+</Tip>
+
+---
+
+## Custom retention on Enterprise
+
+The Enterprise plan lets you configure a retention period that matches your compliance and business requirements — whether that's 90 days, one year, or longer. Custom retention is set at the account level and applies to all projects.
+
+To discuss your retention requirements and get a quote, [book a call with the Veritrix team](https://calendar.app.google/Ph3frk4kwVVC1wsT8).
+
+---
+
+## Data residency
+
+On the Free and Team plans, trace data is stored in Veritrix's default cloud region. If your organization requires data to remain in a specific geographic region — for example, to comply with GDPR, data sovereignty laws, or internal policy — the Enterprise plan offers data residency options across major cloud regions (AWS, GCP, and Azure).
+
+Contact [sales](https://calendar.app.google/Ph3frk4kwVVC1wsT8) to discuss which residency configurations are available and what's required to enable them for your account.

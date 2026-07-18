@@ -1,0 +1,116 @@
+---
+title: "Understanding Traces and Spans in Veritrix — Core Concepts"
+sidebarTitle: "Traces & Spans"
+description: "Learn how Veritrix models every agent run as a trace made up of spans — the building blocks that give you full visibility into your AI agents."
+---
+
+Every time your agent runs, Veritrix records the entire execution as a **trace** — a complete, ordered record of every decision, tool call, and handoff from the moment the agent starts to the moment it finishes. Within that trace, each discrete unit of work is captured as a **span**. Together, traces and spans give you an exact replay of what your agent did, how long each step took, how many tokens it consumed, and whether anything went wrong.
+
+## What Is a Trace?
+
+A trace represents one end-to-end agent run. It starts when your agent receives its first input and ends when it returns a final response or errors out. If your agent delegates work to sub-agents, their execution is nested inside the same trace — so you always have a single, unified view of the entire chain.
+
+Every trace carries the following metadata:
+
+| Field | Type | Description |
+|---|---|---|
+| `trace_id` | hex string | Unique identifier for the trace, e.g. `0x9f3a·b21e·c704` |
+| `span_count` | integer | Total number of spans recorded in the trace |
+| `duration` | float (seconds) | Wall-clock time from trace start to finish |
+| `total_tokens` | integer | Sum of all input and output tokens across every LLM span |
+| `total_cost` | float ($) | Estimated dollar cost of the entire trace |
+
+## What Is a Span?
+
+A span is a single unit of work inside a trace. One LLM call is a span. One tool invocation is a span. One handoff to a sub-agent is a span. Spans are the atoms Veritrix uses to build the full picture of your agent's behaviour.
+
+Each span records what happened, how long it took, and whether it succeeded or failed. When spans are nested — for example, a tool call that happens inside an LLM planning step — Veritrix preserves the parent-child relationship so you can navigate the exact execution path in the dashboard.
+
+## Span Types
+
+Veritrix recognises four built-in span types, each mapped to a distinct category of agent work:
+
+| Span Type | Description |
+|---|---|
+| `llm.call` | A single completion request sent to a language model |
+| `tool.exec` | Execution of a tool or function call triggered by the agent |
+| `agent.handoff` | Control passed from one agent to another in a multi-agent chain |
+| `llm.retry` | An automatic retry of a failed or malformed LLM call |
+
+## Span Payload
+
+Every span carries a structured payload. Here is a representative example from a planning step:
+
+```json
+{
+  "span": "planner.plan",
+  "duration_ms": 412,
+  "input_tokens": 487,
+  "output_tokens": 325,
+  "status": "ok"
+}
+```
+
+The fields you will see on every span are:
+
+| Field | Type | Description |
+|---|---|---|
+| `span` | string | Human-readable name for this unit of work |
+| `duration_ms` | integer | How long this span took, in milliseconds |
+| `input_tokens` | integer | Tokens sent to the model in the prompt |
+| `output_tokens` | integer | Tokens returned by the model in the completion |
+| `status` | `"ok"` \| `"fail"` | Whether the span completed successfully |
+| `error` | string | Error message, present only when `status` is `"fail"` |
+
+<Note>
+  `input_tokens` and `output_tokens` are only present on `llm.call` and `llm.retry` spans. `tool.exec` and `agent.handoff` spans omit these fields.
+</Note>
+
+## Getting Started
+
+To start capturing traces and spans, install the SDK and initialise it with your agent name:
+
+```bash
+pip install veritrix
+```
+
+```python
+from veritrix import trace
+
+trace.init("my-agent")
+```
+
+After calling `trace.init`, Veritrix automatically instruments your agent. Every LLM call, tool execution, and handoff is recorded without any additional code changes.
+
+<Tip>
+  Pass a descriptive name to `trace.init` — it becomes the root label in the Veritrix dashboard and appears on shareable trace links, so your team can immediately identify which agent a trace belongs to.
+</Tip>
+
+## Navigating Traces in the Dashboard
+
+<Steps>
+  <Step title="Open the Traces view">
+    In the left sidebar, click **Traces**. You will see a paginated list of recent runs sorted by start time, with at-a-glance columns for duration, span count, total tokens, and cost.
+  </Step>
+  <Step title="Select a trace">
+    Click any row to open the trace detail view. The top panel shows trace-level metadata — `trace_id`, total duration, token counts, and cost. The bottom panel renders the full span waterfall.
+  </Step>
+  <Step title="Inspect individual spans">
+    Click any span in the waterfall to expand its payload. You will see the raw input and output, token counts, duration, status, and — for failed spans — the error message that triggered the failure.
+  </Step>
+  <Step title="Filter by span type or status">
+    Use the filter bar above the waterfall to narrow spans by type (`llm.call`, `tool.exec`, etc.) or by status (`ok` / `fail`). This is particularly useful in long traces with hundreds of spans.
+  </Step>
+  <Step title="Share the trace">
+    Every trace has a permalink. Click **Copy link** in the top-right corner to share the full trace with a teammate, attach it to a bug report, or include it in a compliance review.
+  </Step>
+</Steps>
+
+<CardGroup cols={2}>
+  <Card title="Agents & Handoffs" icon="arrows-split-up-and-left" href="/concepts/agents-and-handoffs">
+    Learn how multi-agent chains are represented as nested spans inside a single trace.
+  </Card>
+  <Card title="Root-Cause Summaries" icon="magnifying-glass-chart" href="/concepts/root-cause-summaries">
+    See how Veritrix turns failed traces into plain-language explanations of what went wrong.
+  </Card>
+</CardGroup>

@@ -1,0 +1,50 @@
+---
+title: "Veritrix — Observability for AI Agents and Pipelines"
+sidebarTitle: "Overview"
+description: "Trace every decision across every agent in your pipeline. Replay failures, diagnose root causes, and ship AI agents to production with confidence."
+---
+
+Veritrix is the observability platform built for AI agents. Whether you're running a single assistant or a complex multi-agent pipeline, Veritrix gives you a complete, navigable timeline of every LLM call, tool execution, and agent handoff — so when something breaks, you know exactly why in minutes, not hours.
+
+<CardGroup cols={2}>
+  <Card title="Introduction" icon="book-open" href="/introduction">
+    Learn what Veritrix is, the problems it solves, and who it's built for — from engineers to compliance teams.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Install the SDK, add two lines of code, and get your first trace inside ten seconds.
+  </Card>
+  <Card title="OpenAI Agents SDK" icon="robot" href="/integrations/openai-agents-sdk">
+    Native instrumentation for OpenAI's Agents SDK — zero configuration, full trace coverage from day one.
+  </Card>
+  <Card title="Trace Waterfall" icon="chart-gantt" href="/features/trace-waterfall">
+    See every span across every agent on one timeline — nested handoffs, parallel calls, and retries all in view.
+  </Card>
+</CardGroup>
+
+## Get up and running in three steps
+
+You can go from zero to your first trace in under a minute. Here's all it takes.
+
+<Steps>
+  <Step title="Install the SDK">
+    Add Veritrix to your Python environment with a single command.
+
+    ```bash
+    pip install veritrix
+    ```
+  </Step>
+  <Step title="Instrument your agent">
+    Import `trace` and call `trace.init` at the top of your agent entry point. Two lines — that's it.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("my-agent")
+    ```
+  </Step>
+  <Step title="View traces in the dashboard">
+    Run your agent as normal, then open the Veritrix dashboard to see a live waterfall of every span, token count, and payload.
+
+    **Dashboard:** [app.veritrix.xyz](https://app.veritrix.xyz)
+  </Step>
+</Steps>

@@ -1,0 +1,99 @@
+---
+title: "Cost Tracking: Per-Agent and Per-Span Spend Attribution"
+sidebarTitle: "Cost Tracking"
+description: "See what every agent and LLM call costs in real time. Catch runaway loops before the invoice arrives and fine-tune cheaper models on saved completions."
+---
+
+Token costs have a way of surprising teams that don't track them closely. A retry loop that fires three extra times per request, an agent that sends unnecessarily large prompts, or a single expensive model standing in for work a smaller model could handle — these patterns are invisible until the bill lands. Veritrix surfaces cost at every level of granularity, from an individual `llm.call` span all the way up to the total daily spend for an entire agent, so you can spot the runaway loop before the invoice arrives.
+
+## What Cost Tracking Shows
+
+Veritrix attributes cost at two levels:
+
+- **Per-span cost** — every `llm.call` and `llm.retry` span carries an inferred dollar cost calculated from its `input_tokens`, `output_tokens`, and the current pricing for the model that was called.
+- **Per-agent cost** — the aggregate spend for all LLM spans that ran under a given agent's root span, rolled up across any time window you choose.
+
+Together, these two views let you answer both micro questions ("why did this one trace cost $0.40?") and macro questions ("which agent is driving 80% of our monthly spend?").
+
+## How Costs Are Calculated
+
+Veritrix calculates cost from the token counts recorded on each LLM span:
+
+```text
+span_cost = (input_tokens × input_price_per_token)
+          + (output_tokens × output_price_per_token)
+```
+
+Model pricing is kept up to date by Veritrix automatically — you never need to hard-code token prices or update a configuration file when a provider changes its rates. The model name is captured from the LLM call itself, so multi-model agents are costed correctly even when different agents in the chain use different models.
+
+<Note>
+  Cost figures in Veritrix are **estimates** based on published provider pricing. Actual charges on your provider invoice may differ slightly due to rounding, promotional pricing, or enterprise agreements.
+</Note>
+
+## Cost Fields on Spans
+
+The following fields on `llm.call` and `llm.retry` spans feed directly into cost calculations:
+
+| Field | Type | Description |
+|---|---|---|
+| `input_tokens` | integer | Tokens sent to the model in the prompt |
+| `output_tokens` | integer | Tokens returned by the model in the completion |
+| `inferred_cost` | float ($) | Estimated cost of this span, computed by Veritrix |
+
+You can inspect these fields by clicking any LLM span in the trace waterfall. The `inferred_cost` is displayed prominently alongside the token counts so you always know what a single call contributed to the total.
+
+## Aggregate Views
+
+The **Cost** dashboard aggregates span-level data into time-series charts and per-agent breakdowns. For example:
+
+> **Research analyst agent — Total spend $3.00** (past 7 days)
+> - 1,240 `llm.call` spans
+> - 2.1M input tokens, 890K output tokens
+> - Average cost per trace: $0.18
+
+You can slice this view by:
+
+- **Agent** — compare spend across all agents in your workspace side by side.
+- **Model** — see how much each model (e.g. GPT-4o vs. GPT-4o-mini) is contributing to cost.
+- **Time window** — choose today, the last 7 days, last 30 days, or a custom range.
+- **Span type** — isolate the cost of retries specifically to understand how much failed calls are costing you.
+
+<Tip>
+  Sort the per-agent cost table by **average cost per trace** rather than total spend to identify agents that are expensive per-run, not just agents that run frequently. These are often the best candidates for prompt optimisation or model downgrading.
+</Tip>
+
+## Alerting on Cost Anomalies
+
+Unexpected cost spikes — a retry loop, a prompt that suddenly became 10× larger, a new code path that calls an expensive model — show up in Veritrix before they show up on your provider dashboard. You can configure cost alerts to notify your team when spend crosses a threshold.
+
+See the [Alerting](/features/alerting) page for full details on configuring cost alerts, including per-agent thresholds, percentage-change triggers, and notification channels.
+
+## Fine-Tuning Cheaper Models on Saved Completions
+
+Every completion Veritrix records is available for export. If a particular agent is performing a narrow, well-defined task — classification, extraction, formatting, code review — you can fine-tune a smaller, specialised model on those saved completions and replace the general-purpose model entirely.
+
+Teams that do this consistently report cost reductions of **up to 25×** on the fine-tuned agent compared to running the same task on a frontier model, with equal or better accuracy on the specific task.
+
+<Steps>
+  <Step title="Identify a high-spend, narrow-task agent">
+    In the Cost dashboard, look for agents with a high volume of similar LLM calls — the same prompt structure, consistent output format, low variance in task type. These are the best candidates for fine-tuning.
+  </Step>
+  <Step title="Export saved completions">
+    Navigate to the agent's detail page, click **Export completions**, and choose a date range. Veritrix exports the completions in JSONL format, ready for use with any fine-tuning provider.
+  </Step>
+  <Step title="Fine-tune your model">
+    Use the exported completions to fine-tune a smaller base model with your preferred provider. Veritrix does not lock you into a specific fine-tuning service.
+  </Step>
+  <Step title="Update the agent and compare costs">
+    Deploy the fine-tuned model, point your agent at it, and let Veritrix measure the cost difference. The before/after comparison is visible in the Cost dashboard once the new model has accumulated enough runs.
+  </Step>
+</Steps>
+
+<CardGroup cols={2}>
+  <Card title="Traces & Spans" icon="chart-gantt" href="/concepts/traces-and-spans">
+    Learn about the token and cost fields recorded on every LLM span.
+  </Card>
+  <Card title="Alerting" icon="bell" href="/features/alerting">
+    Set up cost anomaly alerts so your team knows the moment spend spikes unexpectedly.
+  </Card>
+</CardGroup>

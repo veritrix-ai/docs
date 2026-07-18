@@ -1,0 +1,119 @@
+---
+title: "OpenAI Agents SDK Integration with Veritrix Tracing"
+sidebarTitle: "OpenAI Agents"
+description: "Trace OpenAI Agents SDK workflows automatically with Veritrix. Capture every LLM call, tool invocation, and agent handoff with zero code changes."
+---
+
+Veritrix integrates seamlessly with the OpenAI Agents SDK, giving you full observability into your agent workflows the moment you call `trace.init()`. Whether you're building single-agent assistants or orchestrating multi-agent pipelines with handoffs, every LLM call, tool execution, and retry is captured automatically — no bespoke wrappers or manual instrumentation required.
+
+## Prerequisites
+
+- Python 3.9 or higher
+- An active [Veritrix account](https://app.veritrix.xyz) and API key
+- OpenAI Agents SDK installed (`openai-agents` or the `openai` beta agents package)
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Install Veritrix and the OpenAI Agents SDK">
+    ```bash
+    pip install veritrix openai
+    ```
+  </Step>
+
+  <Step title="Initialize Veritrix tracing">
+    Call `trace.init()` once at the entry point of your application, before any agent or client is constructed.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("support-agent")
+    ```
+
+    Replace `"support-agent"` with a meaningful name that identifies this agent in the Veritrix dashboard.
+  </Step>
+
+  <Step title="Use the OpenAI client as normal">
+    No further changes are needed. Veritrix patches the OpenAI client automatically after `trace.init()` is called.
+
+    ```python
+    from openai import OpenAI
+    from veritrix import trace
+
+    trace.init("support-agent")
+    client = OpenAI()
+    # Your agent code runs normally — Veritrix captures all calls automatically
+    ```
+  </Step>
+</Steps>
+
+## Example Agent
+
+The following example shows a minimal support agent built with the OpenAI Agents SDK. Veritrix traces every step without any additional instrumentation.
+
+```python
+from openai import OpenAI
+from veritrix import trace
+
+trace.init("support-agent")
+
+client = OpenAI()
+
+def get_order_status(order_id: str) -> str:
+    # Simulate a tool call
+    return f"Order {order_id} is currently being processed."
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_order_status",
+            "description": "Returns the current status of a customer order.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {"type": "string", "description": "The order ID to look up."}
+                },
+                "required": ["order_id"],
+            },
+        },
+    }
+]
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {"role": "system", "content": "You are a helpful customer support agent."},
+        {"role": "user", "content": "What is the status of order #12345?"},
+    ],
+    tools=tools,
+)
+
+print(response.choices[0].message.content)
+```
+
+Veritrix records the full trace for this interaction — including the model used, prompt tokens, completion tokens, latency, and any tool calls made — and surfaces it in your dashboard in real time.
+
+## What Gets Captured Automatically
+
+Once `trace.init()` is called, Veritrix automatically captures the following telemetry for every run:
+
+| Signal | Details |
+|---|---|
+| **LLM calls** | Model name, prompt, completion, token counts, latency |
+| **Tool calls** | Function name, input arguments, output, duration |
+| **Agent handoffs** | Source agent, target agent, context passed |
+| **Retries** | Retry count, error reason, backoff duration |
+| **Errors** | Exception type, message, stack trace attached to the relevant span |
+
+<Note>
+  Sensitive fields such as prompt content can be redacted before export. See the [Audit Export guide](/features/audit-export) for configuration options.
+</Note>
+
+## OpenTelemetry Compatibility
+
+Veritrix is built on [OpenTelemetry](https://opentelemetry.io), which means every span it produces is a standard OTel span. If your infrastructure already runs an OTel collector (Jaeger, Honeycomb, Datadog, etc.), Veritrix traces flow into it without any additional configuration.
+
+<Tip>
+  To route traces to your own OTel collector instead of (or in addition to) the Veritrix backend, see the [OpenTelemetry integration page](/integrations/opentelemetry).
+</Tip>

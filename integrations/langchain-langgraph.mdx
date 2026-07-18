@@ -1,0 +1,132 @@
+---
+title: "Trace LangChain & LangGraph Workflows with Veritrix"
+sidebarTitle: "LangChain"
+description: "Add full observability to LangChain chains and LangGraph graphs with Veritrix. Auto-trace every LLM call, tool use, and graph node transition."
+---
+
+Veritrix plugs directly into LangChain and LangGraph with a single initialization call, giving you deep visibility into chains, agents, and stateful graphs without touching your existing application logic. Every LLM invocation, tool call, retriever lookup, and LangGraph node transition is captured as a structured trace and surfaced in the Veritrix dashboard — so you can debug failures, measure latency, and understand exactly how your graph executes at runtime.
+
+## Prerequisites
+
+- Python 3.9 or higher
+- An active [Veritrix account](https://app.veritrix.xyz) and API key
+- LangChain and/or LangGraph installed
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Install Veritrix alongside LangChain">
+    ```bash
+    pip install veritrix langchain langchain-openai
+    ```
+
+    If you are using LangGraph, install it as well:
+
+    ```bash
+    pip install langgraph
+    ```
+  </Step>
+
+  <Step title="Initialize Veritrix tracing">
+    Call `trace.init()` once at application startup, before you instantiate any LLM or chain.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("langchain-agent")
+    ```
+  </Step>
+
+  <Step title="Use LangChain and LangGraph as normal">
+    Veritrix automatically instruments the LangChain callback system after `trace.init()`. No custom callbacks or wrappers are required.
+
+    ```python
+    from langchain_openai import ChatOpenAI
+    from veritrix import trace
+
+    trace.init("langchain-agent")
+    llm = ChatOpenAI(model="gpt-4o")
+    # Use llm normally — all calls are traced
+    ```
+  </Step>
+</Steps>
+
+## Example: LangChain Chain
+
+The following example builds a simple prompt-and-response chain. Veritrix traces the entire chain execution, including each LLM call and its token usage.
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from veritrix import trace
+
+trace.init("langchain-agent")
+
+llm = ChatOpenAI(model="gpt-4o")
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a concise technical writer."),
+    ("human", "Summarize the following in two sentences: {text}"),
+])
+
+chain = prompt | llm | StrOutputParser()
+
+result = chain.invoke({"text": "OpenTelemetry is a set of APIs, SDKs, and tools for instrumenting, generating, collecting, and exporting telemetry data."})
+print(result)
+```
+
+## Example: LangGraph Stateful Graph
+
+For LangGraph workflows, Veritrix traces each node invocation and the edges traversed between them, giving you a step-by-step view of graph execution.
+
+```python
+from langgraph.graph import StateGraph, END
+from langchain_openai import ChatOpenAI
+from veritrix import trace
+from typing import TypedDict
+
+trace.init("langgraph-pipeline")
+
+llm = ChatOpenAI(model="gpt-4o")
+
+class AgentState(TypedDict):
+    question: str
+    answer: str
+
+def answer_node(state: AgentState) -> AgentState:
+    response = llm.invoke(state["question"])
+    return {"question": state["question"], "answer": response.content}
+
+builder = StateGraph(AgentState)
+builder.add_node("answer", answer_node)
+builder.set_entry_point("answer")
+builder.add_edge("answer", END)
+
+graph = builder.compile()
+output = graph.invoke({"question": "What is observability?", "answer": ""})
+print(output["answer"])
+```
+
+## What Gets Captured Automatically
+
+| Signal | Details |
+|---|---|
+| **LLM calls** | Model name, prompt messages, completion, token counts, latency |
+| **Tool calls** | Tool name, input, output, duration |
+| **Retriever calls** | Query, retrieved documents, relevance scores |
+| **LangGraph nodes** | Node name, input state, output state, duration |
+| **Agent handoffs** | Source agent, target agent, context forwarded |
+| **Retries** | Retry attempt number, error type, delay |
+
+<Note>
+  Veritrix hooks into LangChain's native callback system under the hood. If you already use custom callbacks (for logging, streaming, etc.), they continue to work alongside Veritrix without conflict.
+</Note>
+
+## OpenTelemetry Compatibility
+
+Veritrix is built on [OpenTelemetry](https://opentelemetry.io). Every span generated for your LangChain or LangGraph execution is a standards-compliant OTel span, exportable to any OTel-compatible backend — including collectors you already operate.
+
+<Tip>
+  To send traces to your own OTel collector or a third-party observability platform, see the [OpenTelemetry integration page](/integrations/opentelemetry).
+</Tip>

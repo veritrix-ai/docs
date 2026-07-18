@@ -1,0 +1,188 @@
+---
+title: "OpenTelemetry Integration with Veritrix Observability"
+sidebarTitle: "OpenTelemetry"
+description: "Veritrix is built on OpenTelemetry — no vendor lock-in, works with any OTel runtime, and integrates seamlessly with your existing observability stack."
+---
+
+Veritrix is built natively on [OpenTelemetry](https://opentelemetry.io) (OTel) — the industry-standard, vendor-neutral observability framework. This means every span Veritrix generates is a fully compliant OTel span. You are never locked into the Veritrix backend: you can route traces to your own collector, combine Veritrix traces with infrastructure telemetry, or use Veritrix alongside any existing OTel setup without conflict. If your agent framework emits OTel spans, Veritrix can observe it — even frameworks not listed in our integrations pages.
+
+## What "OpenTelemetry-Native" Means for You
+
+Using OTel as the foundation gives you several practical guarantees:
+
+- **No vendor lock-in.** Your traces are standard OTel spans. If you ever switch backends, your instrumentation stays the same.
+- **Works alongside existing OTel setups.** If you already run an OTel collector for infrastructure metrics or application traces, Veritrix plugs in without any conflicts.
+- **Framework-agnostic.** Any agent framework that emits OTel spans — or that you manually instrument with the OTel SDK — works with Veritrix automatically.
+- **Portable data model.** Spans, attributes, and events follow the [OTel semantic conventions](https://opentelemetry.io/docs/specs/semconv/), making it easy to query and correlate traces in any compatible backend.
+
+## Prerequisites
+
+- Python 3.9 or higher
+- An active [Veritrix account](https://app.veritrix.xyz) and API key
+- Veritrix installed
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Install Veritrix">
+    ```bash
+    pip install veritrix
+    ```
+
+    Veritrix bundles the OpenTelemetry SDK and a default OTLP exporter. You do not need to install `opentelemetry-sdk` separately unless you want to manage the OTel SDK version explicitly.
+  </Step>
+
+  <Step title="Initialize Veritrix tracing">
+    Call `trace.init()` once at application startup. By default, Veritrix exports spans to the Veritrix backend using OTLP over gRPC.
+
+    ```python
+    from veritrix import trace
+
+    trace.init("my-agent")
+    # Veritrix automatically exports spans via OpenTelemetry
+    # Compatible with any existing OTel collector
+    ```
+  </Step>
+
+  <Step title="(Optional) Configure a custom OTel exporter">
+    To send traces to your own OTel collector or a third-party backend, pass a custom exporter when calling `trace.init()`. Veritrix accepts any `SpanExporter` from the OTel SDK.
+
+    ```python
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from veritrix import trace
+
+    custom_exporter = OTLPSpanExporter(endpoint="http://your-collector:4317", insecure=True)
+
+    trace.init("my-agent", exporter=custom_exporter)
+    ```
+
+    You can also provide multiple exporters to send traces to both Veritrix and your own backend simultaneously:
+
+    ```python
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from veritrix import trace
+
+    exporters = [
+        OTLPSpanExporter(endpoint="http://your-collector:4317", insecure=True),
+        ConsoleSpanExporter(),  # Also print spans to stdout for local debugging
+    ]
+
+    trace.init("my-agent", exporters=exporters)
+    ```
+  </Step>
+</Steps>
+
+## Creating Manual Spans
+
+For code paths that Veritrix does not instrument automatically — custom business logic, non-standard frameworks, or third-party SDKs — you can create spans manually using the standard OTel SDK. These spans appear in the Veritrix dashboard as part of the same trace.
+
+```python
+from opentelemetry import trace as otel_trace
+from veritrix import trace
+
+trace.init("my-agent")
+
+tracer = otel_trace.get_tracer("my-agent")
+
+def process_document(doc_id: str, content: str) -> str:
+    with tracer.start_as_current_span("process_document") as span:
+        span.set_attribute("document.id", doc_id)
+        span.set_attribute("document.length", len(content))
+
+        # Your processing logic here
+        result = content.strip().upper()
+
+        span.set_attribute("document.result_length", len(result))
+        return result
+
+output = process_document("doc-42", "  hello world  ")
+print(output)
+```
+
+## Adding Custom Attributes and Events
+
+You can enrich any span with custom attributes or record point-in-time events using the standard OTel API. These attributes and events are indexed and searchable in the Veritrix dashboard.
+
+```python
+from opentelemetry import trace as otel_trace
+from veritrix import trace
+
+trace.init("my-agent")
+
+tracer = otel_trace.get_tracer("my-agent")
+
+def run_pipeline(query: str) -> str:
+    with tracer.start_as_current_span("run_pipeline") as span:
+        span.set_attribute("pipeline.query", query)
+        span.set_attribute("pipeline.version", "2.1.0")
+
+        # Record a point-in-time event
+        span.add_event("retrieval_started", {"query": query})
+
+        # Simulate retrieval
+        retrieved_docs = ["doc1", "doc2", "doc3"]
+        span.add_event("retrieval_complete", {"doc_count": len(retrieved_docs)})
+
+        span.set_attribute("pipeline.docs_retrieved", len(retrieved_docs))
+        return f"Answer based on {len(retrieved_docs)} documents."
+
+print(run_pipeline("What is observability?"))
+```
+
+## Using Veritrix with Unsupported Frameworks
+
+If you use an agent framework that is not listed in the Veritrix integrations, you can still get full observability as long as the framework emits OTel spans — or you instrument it manually. Call `trace.init()` to set up the Veritrix exporter, then use the OTel SDK to wrap any framework-specific calls.
+
+```python
+from opentelemetry import trace as otel_trace
+from veritrix import trace
+
+trace.init("custom-framework-agent")
+
+tracer = otel_trace.get_tracer("custom-framework-agent")
+
+# Wrap any framework's entry point in a span
+with tracer.start_as_current_span("agent_run") as span:
+    span.set_attribute("framework", "my-custom-framework")
+    span.set_attribute("agent.name", "my-agent")
+
+    # Run your custom framework here
+    result = "Agent output"
+    span.set_attribute("agent.output", result)
+```
+
+<Note>
+  Veritrix uses the [OTLP protocol](https://opentelemetry.io/docs/specs/otlp/) for span export by default. If your existing collector speaks a different protocol (Zipkin, Jaeger Thrift, etc.), install the relevant OTel exporter package and pass it to `trace.init()` as shown above.
+</Note>
+
+## Connecting Veritrix to a Local OTel Collector
+
+If you run a local [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) for development or testing, point Veritrix at it by setting the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable before starting your application:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+python my_agent.py
+```
+
+Veritrix respects all standard [OTel environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/), so you can configure the exporter endpoint, headers, and timeout without changing any code.
+
+<Tip>
+  Running the OTel Collector in debug mode locally is a quick way to verify that Veritrix is exporting spans correctly before deploying to production. Start the collector with the `debug` exporter enabled to print all received spans to the terminal.
+</Tip>
+
+## Supported OTel Backends
+
+Because Veritrix emits standard OTel spans, it works with every major OTel-compatible backend out of the box:
+
+| Backend | Protocol |
+|---|---|
+| Veritrix Cloud | OTLP/gRPC |
+| Jaeger | OTLP/gRPC or HTTP |
+| Grafana Tempo | OTLP/gRPC or HTTP |
+| Honeycomb | OTLP/HTTP |
+| Datadog | OTLP/gRPC |
+| AWS X-Ray (via Collector) | OTLP/gRPC |
+| Google Cloud Trace | OTLP/HTTP |
+| Azure Monitor | OTLP/HTTP |
+| Zipkin | Zipkin exporter |
