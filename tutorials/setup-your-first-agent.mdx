@@ -16,11 +16,11 @@ By the end, you'll have:
 
 ## Step 1: Register on Veritrix
 
-Head to [veritrix.xyz](https://www.veritrix.xyz) and create an account. You can sign up with Google, GitHub, or email.
+Head to [app.veritrix.xyz](https://app.veritrix.xyz) and create an account. You can sign up with Google, GitHub, or email.
 
 Once your account is ready, you'll land on the Veritrix dashboard.
 
-![Veritrix sign-up screen](/images/tutorials/01-register.png)
+![Screenshot 2026 07 20 At 3 22 38 PM](/images/Screenshot-2026-07-20-at-3.22.38-PM.png)
 
 ## Step 2: Open the Get Started page
 
@@ -46,7 +46,7 @@ On the Get Started page, pick the setup path that matches where your agent code 
   </Card>
 </CardGroup>
 
-![Get Started page with the three setup options](/images/tutorials/03-choose-option.png)
+![Screenshot 2026 07 20 At 3 25 15 PM](/images/Screenshot-2026-07-20-at-3.25.15-PM.png)
 
 <Tip>
   Not sure which to pick? Choose **Existing Codebase** if you already have an agent you want to observe, or **Fresh Code** if you just want to see Veritrix in action end-to-end.
@@ -56,23 +56,33 @@ On the Get Started page, pick the setup path that matches where your agent code 
 
 Based on your selection, Veritrix generates a code snippet pre-filled with your project's API key and endpoint. Copy it and paste it into your agent code — as close as possible to where your agent starts running, so it can capture every LLM call, tool use, and handoff.
 
-![Generated Veritrix SDK snippet on the Get Started page](/images/tutorials/04-copy-snippet.png)
+![Screenshot 2026 07 20 At 3 26 24 PM](/images/Screenshot-2026-07-20-at-3.26.24-PM.png)
 
 A typical snippet looks like this:
 
 ```python Add to your agent entrypoint
-from veritrix import trace
+import time
+import agentops as veritrix
 
-trace.init(
-    api_key="vx_live_xxxxxxxxxxxxxxxxxxxx",
-    project="my-first-agent",
+veritrix.init(
+    api_key="ao_live_353d7dfb806e80aabf3f87c6163dd55c011b58c4605b5e43",
+    endpoint="https://veritrix-ingest.onrender.com",
+    default_tags=["getting-started"],
+    framework="manual",
+    agent_name="Quickstart Agent",
 )
 
-# ...your existing agent code runs below this line
+with veritrix.trace("hello-agent", span_type="agent", input_data={"message": "Hello Veritrix"}):
+    time.sleep(0.1)
+    with veritrix.trace("sample-tool", span_type="tool", input_data="ping"):
+        time.sleep(0.05)
+
+veritrix.end()
+print("Done — check the Traces page in your Veritrix dashboard.")
 ```
 
 <Note>
-  Put `trace.init()` **before** you import or instantiate your LLM clients and agent framework. That's how Veritrix auto-instruments everything downstream.
+  Call `veritrix.init()` **before** you import or instantiate your LLM clients and agent framework. That's how Veritrix auto-instruments everything downstream.
 </Note>
 
 ## Step 5: Validate the connection
@@ -81,7 +91,7 @@ Back on the Get Started page, click **Verify**. Veritrix will wait for the first
 
 Run your agent once (locally, in Colab, or in your service) after adding the snippet, then hit **Verify**.
 
-![Verify button confirming a successful connection](/images/tutorials/05-verify.png)
+![Screenshot 2026 07 20 At 3 27 37 PM](/images/Screenshot-2026-07-20-at-3.27.37-PM.png)
 
 When validation succeeds, you'll see a success state and be redirected into the product.
 
@@ -93,7 +103,7 @@ Every time your agent runs, Veritrix captures the run via the ingest API and dis
 - LLM calls, tool executions, and agent handoffs as spans
 - Latency, token usage, and cost per span
 
-![Traces tab showing live incoming agent runs](/images/tutorials/06-traces-tab.png)
+![Screenshot 2026 07 20 At 3 29 11 PM](/images/Screenshot-2026-07-20-at-3.29.11-PM.png)
 
 Click any trace to drill into the waterfall view and inspect exactly what your agent did.
 
