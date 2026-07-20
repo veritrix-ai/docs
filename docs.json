@@ -42,6 +42,13 @@
             ]
           },
           {
+            "group": "Tutorials",
+            "icon": "graduation-cap",
+            "pages": [
+              "tutorials/setup-your-first-agent"
+            ]
+          },
+          {
             "group": "Integrations",
             "pages": [
               "integrations/openai-agents-sdk",
