@@ -3,10 +3,13 @@
   "name": "Veritrix",
   "theme": "luma",
   "logo": {
-    "light": "https://media.brand.dev/38d058eb-8329-411e-9ca2-2903fe507d03.svg",
-    "dark": "https://media.brand.dev/38d058eb-8329-411e-9ca2-2903fe507d03.svg"
+    "light": "/images/veritrixlogomark.png",
+    "dark": "/images/veritrixlogomark.png"
   },
-  "favicon": "https://media.brand.dev/eae3f2f2-2655-4c54-963c-3e2ad3f93c9f.png",
+  "favicon": {
+    "light": "/images/veritrixlogomark.png",
+    "dark": "/images/veritrixlogomark.png"
+  },
   "colors": {
     "primary": "#229ED9",
     "light": "#1E88C5",
