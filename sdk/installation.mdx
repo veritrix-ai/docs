@@ -1,7 +1,7 @@
 ---
 title: "Install the Veritrix Python SDK — Getting Started"
 sidebarTitle: "Installation"
-description: "Add Veritrix to your Python project in under a minute with pip install veritrix. Requires Python 3.8 or later and a Veritrix API key from the dashboard."
+description: "Add Veritrix to your Python project in under a minute by installing directly from the veritrix-ai/veritrix-sdk GitHub repository. Requires Python 3.8 or later."
 ---
 
 The Veritrix Python SDK is the fastest way to add full observability to your AI agents. Install the package, call `trace.init()` once, and every LLM call, tool execution, and agent handoff is captured automatically — no manual instrumentation required.
@@ -18,23 +18,17 @@ Choose the package manager you already use in your project.
 <CodeGroup>
 
 ```bash pip
-pip install veritrix
+pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git"
 ```
 
 ```bash poetry
-poetry add veritrix
-```
-
-```bash conda
-conda install -c conda-forge veritrix
+poetry add git+https://github.com/veritrix-ai/veritrix-sdk.git
 ```
 
 </CodeGroup>
 
 <Note>
-  If the `conda-forge` channel does not yet carry the latest release, install
-  with `pip` inside your conda environment instead:
-  `pip install veritrix`
+  The SDK is installed directly from the [veritrix-ai/veritrix-sdk](https://github.com/veritrix-ai/veritrix-sdk) GitHub repository.
 </Note>
 
 ## Verify the installation
@@ -64,9 +58,7 @@ You will need a Veritrix API key before you can send traces to the dashboard.
 </Steps>
 
 <Tip>
-  The recommended way to supply your API key is through the `VERITRIX_API_KEY`
-  environment variable so it never appears in source code. See the
-  [Initialization](/sdk/initialization) page for details.
+  The recommended way to supply your API key is through the `VERITRIX_API_KEY` environment variable so it never appears in source code. See the [Initialization](/sdk/initialization) page for details.
 </Tip>
 
 ## Next step

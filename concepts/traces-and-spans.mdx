@@ -13,12 +13,12 @@ A trace represents one end-to-end agent run. It starts when your agent receives 
 Every trace carries the following metadata:
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `trace_id` | hex string | Unique identifier for the trace, e.g. `0x9f3a·b21e·c704` |
 | `span_count` | integer | Total number of spans recorded in the trace |
 | `duration` | float (seconds) | Wall-clock time from trace start to finish |
 | `total_tokens` | integer | Sum of all input and output tokens across every LLM span |
-| `total_cost` | float ($) | Estimated dollar cost of the entire trace |
+| `total_cost` | float (\$) | Estimated dollar cost of the entire trace |
 
 ## What Is a Span?
 
@@ -31,7 +31,7 @@ Each span records what happened, how long it took, and whether it succeeded or f
 Veritrix recognises four built-in span types, each mapped to a distinct category of agent work:
 
 | Span Type | Description |
-|---|---|
+| --- | --- |
 | `llm.call` | A single completion request sent to a language model |
 | `tool.exec` | Execution of a tool or function call triggered by the agent |
 | `agent.handoff` | Control passed from one agent to another in a multi-agent chain |
@@ -54,7 +54,7 @@ Every span carries a structured payload. Here is a representative example from a
 The fields you will see on every span are:
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `span` | string | Human-readable name for this unit of work |
 | `duration_ms` | integer | How long this span took, in milliseconds |
 | `input_tokens` | integer | Tokens sent to the model in the prompt |
@@ -71,7 +71,7 @@ The fields you will see on every span are:
 To start capturing traces and spans, install the SDK and initialise it with your agent name:
 
 ```bash
-pip install veritrix
+pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git"
 ```
 
 ```python
@@ -110,6 +110,7 @@ After calling `trace.init`, Veritrix automatically instruments your agent. Every
   <Card title="Agents & Handoffs" icon="arrows-split-up-and-left" href="/concepts/agents-and-handoffs">
     Learn how multi-agent chains are represented as nested spans inside a single trace.
   </Card>
+
   <Card title="Root-Cause Summaries" icon="magnifying-glass-chart" href="/concepts/root-cause-summaries">
     See how Veritrix turns failed traces into plain-language explanations of what went wrong.
   </Card>

@@ -17,29 +17,27 @@ Veritrix integrates seamlessly with the OpenAI Agents SDK, giving you full obser
 <Steps>
   <Step title="Install Veritrix and the OpenAI Agents SDK">
     ```bash
-    pip install veritrix openai
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git" openai
     ```
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` once at the entry point of your application, before any agent or client is constructed.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("support-agent")
     ```
 
     Replace `"support-agent"` with a meaningful name that identifies this agent in the Veritrix dashboard.
   </Step>
-
   <Step title="Use the OpenAI client as normal">
     No further changes are needed. Veritrix patches the OpenAI client automatically after `trace.init()` is called.
 
     ```python
     from openai import OpenAI
     from veritrix import trace
-
+    
     trace.init("support-agent")
     client = OpenAI()
     # Your agent code runs normally — Veritrix captures all calls automatically
@@ -99,7 +97,7 @@ Veritrix records the full trace for this interaction — including the model use
 Once `trace.init()` is called, Veritrix automatically captures the following telemetry for every run:
 
 | Signal | Details |
-|---|---|
+| --- | --- |
 | **LLM calls** | Model name, prompt, completion, token counts, latency |
 | **Tool calls** | Function name, input arguments, output, duration |
 | **Agent handoffs** | Source agent, target agent, context passed |

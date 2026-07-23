@@ -23,27 +23,25 @@ Veritrix brings full observability to Microsoft AutoGen's multi-agent conversati
     If you are using the newer AutoGen AgentChat API, install `autogen-agentchat` instead:
 
     ```bash
-    pip install veritrix autogen-agentchat
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git" autogen-agentchat
     ```
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` once at application startup, before you define any agents or start any conversations.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("autogen-pipeline")
     ```
   </Step>
-
   <Step title="Use AutoGen as normal">
     Veritrix patches AutoGen's conversation runtime automatically. Your agent definitions and conversation logic remain unchanged.
 
     ```python
     import autogen
     from veritrix import trace
-
+    
     trace.init("autogen-pipeline")
     # Your AutoGen agents run normally
     ```
@@ -123,7 +121,7 @@ user_proxy.initiate_chat(manager, message="Build a REST API endpoint that return
 ## What Gets Captured Automatically
 
 | Signal | Details |
-|---|---|
+| --- | --- |
 | **LLM calls** | Model name, messages, completion, token counts, latency per agent |
 | **Tool / function calls** | Function name, arguments, return value, duration |
 | **Conversation turns** | Speaker, message content, reply chain depth |

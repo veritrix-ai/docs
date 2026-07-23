@@ -17,7 +17,7 @@ Veritrix gives you complete visibility into your CrewAI applications with zero m
 <Steps>
   <Step title="Install Veritrix and CrewAI">
     ```bash
-    pip install veritrix crewai
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git" crewai
     ```
 
     If you need CrewAI's optional tools bundle, install it as well:
@@ -26,24 +26,22 @@ Veritrix gives you complete visibility into your CrewAI applications with zero m
     pip install "crewai[tools]"
     ```
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` at the top of your entry point, before you define any agents, tasks, or crews.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("research-crew")
     ```
   </Step>
-
   <Step title="Define your Crew as normal">
     No changes are required to your agent or task definitions. Veritrix instruments CrewAI automatically.
 
     ```python
     from crewai import Agent, Task, Crew
     from veritrix import trace
-
+    
     trace.init("research-crew")
     # Define agents and tasks normally
     ```
@@ -128,7 +126,7 @@ print(result)
 ## What Gets Captured Automatically
 
 | Signal | Details |
-|---|---|
+| --- | --- |
 | **LLM calls** | Model name, prompt, completion, token counts, latency per agent |
 | **Tool calls** | Tool name, input arguments, output, duration |
 | **Task execution** | Task description, assigned agent, output, duration |

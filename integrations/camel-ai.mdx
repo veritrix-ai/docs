@@ -17,7 +17,7 @@ Veritrix integrates with CAMEL-AI's communicative agent framework to give you fu
 <Steps>
   <Step title="Install Veritrix and CAMEL-AI">
     ```bash
-    pip install veritrix camel-ai
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git" camel-ai
     ```
 
     To include CAMEL-AI's optional tool and model integrations, install the extras you need:
@@ -26,24 +26,22 @@ Veritrix integrates with CAMEL-AI's communicative agent framework to give you fu
     pip install "camel-ai[all]"
     ```
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` once at application startup, before you instantiate any agents or models.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("camel-agent")
     ```
   </Step>
-
   <Step title="Use CAMEL-AI agents as normal">
     Veritrix instruments the CAMEL-AI agent runtime automatically. Your role assignments, system messages, and conversation loops remain unchanged.
 
     ```python
     from camel.agents import ChatAgent
     from veritrix import trace
-
+    
     trace.init("camel-agent")
     # Your CAMEL agents run normally
     ```
@@ -135,7 +133,7 @@ for _ in range(3):  # Run for 3 turns
 ## What Gets Captured Automatically
 
 | Signal | Details |
-|---|---|
+| --- | --- |
 | **LLM calls** | Model name, system prompt, user message, completion, token counts, latency |
 | **Tool calls** | Tool name, input arguments, output, duration |
 | **Agent messages** | Role name, message content, conversation turn index |

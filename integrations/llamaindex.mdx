@@ -17,7 +17,7 @@ Veritrix gives you deep visibility into LlamaIndex RAG pipelines, query engines,
 <Steps>
   <Step title="Install Veritrix and LlamaIndex">
     ```bash
-    pip install veritrix llama-index
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git" llama-index
     ```
 
     For additional LlamaIndex integrations (e.g., specific LLM providers or vector stores), install the relevant packages separately:
@@ -26,24 +26,22 @@ Veritrix gives you deep visibility into LlamaIndex RAG pipelines, query engines,
     pip install llama-index-llms-openai llama-index-embeddings-openai
     ```
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` once at the top of your application, before you build any index or query engine.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("rag-agent")
     ```
   </Step>
-
   <Step title="Build and query your index as normal">
     Veritrix instruments LlamaIndex's global settings and callback system automatically after `trace.init()`. No changes to your index or query engine code are needed.
 
     ```python
     from llama_index.core import VectorStoreIndex
     from veritrix import trace
-
+    
     trace.init("rag-agent")
     # Build and query your index normally
     ```
@@ -113,7 +111,7 @@ print(response)
 ## What Gets Captured Automatically
 
 | Signal | Details |
-|---|---|
+| --- | --- |
 | **LLM calls** | Model name, prompt, completion, token counts, latency |
 | **Embedding calls** | Model name, input text, vector dimensions, latency |
 | **Retrieval steps** | Query, retrieved nodes, similarity scores, top-k setting |

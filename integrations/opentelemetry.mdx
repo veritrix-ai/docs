@@ -26,33 +26,31 @@ Using OTel as the foundation gives you several practical guarantees:
 <Steps>
   <Step title="Install Veritrix">
     ```bash
-    pip install veritrix
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git"
     ```
 
     Veritrix bundles the OpenTelemetry SDK and a default OTLP exporter. You do not need to install `opentelemetry-sdk` separately unless you want to manage the OTel SDK version explicitly.
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` once at application startup. By default, Veritrix exports spans to the Veritrix backend using OTLP over gRPC.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("my-agent")
     # Veritrix automatically exports spans via OpenTelemetry
     # Compatible with any existing OTel collector
     ```
   </Step>
-
   <Step title="(Optional) Configure a custom OTel exporter">
     To send traces to your own OTel collector or a third-party backend, pass a custom exporter when calling `trace.init()`. Veritrix accepts any `SpanExporter` from the OTel SDK.
 
     ```python
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
     from veritrix import trace
-
+    
     custom_exporter = OTLPSpanExporter(endpoint="http://your-collector:4317", insecure=True)
-
+    
     trace.init("my-agent", exporter=custom_exporter)
     ```
 
@@ -62,12 +60,12 @@ Using OTel as the foundation gives you several practical guarantees:
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
     from veritrix import trace
-
+    
     exporters = [
         OTLPSpanExporter(endpoint="http://your-collector:4317", insecure=True),
         ConsoleSpanExporter(),  # Also print spans to stdout for local debugging
     ]
-
+    
     trace.init("my-agent", exporters=exporters)
     ```
   </Step>
@@ -176,7 +174,7 @@ Veritrix respects all standard [OTel environment variables](https://opentelemetr
 Because Veritrix emits standard OTel spans, it works with every major OTel-compatible backend out of the box:
 
 | Backend | Protocol |
-|---|---|
+| --- | --- |
 | Veritrix Cloud | OTLP/gRPC |
 | Jaeger | OTLP/gRPC or HTTP |
 | Grafana Tempo | OTLP/gRPC or HTTP |

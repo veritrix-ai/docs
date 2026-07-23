@@ -17,7 +17,7 @@ Veritrix plugs directly into LangChain and LangGraph with a single initializatio
 <Steps>
   <Step title="Install Veritrix alongside LangChain">
     ```bash
-    pip install veritrix langchain langchain-openai
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git" langchain langchain-openai
     ```
 
     If you are using LangGraph, install it as well:
@@ -26,24 +26,22 @@ Veritrix plugs directly into LangChain and LangGraph with a single initializatio
     pip install langgraph
     ```
   </Step>
-
   <Step title="Initialize Veritrix tracing">
     Call `trace.init()` once at application startup, before you instantiate any LLM or chain.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("langchain-agent")
     ```
   </Step>
-
   <Step title="Use LangChain and LangGraph as normal">
     Veritrix automatically instruments the LangChain callback system after `trace.init()`. No custom callbacks or wrappers are required.
 
     ```python
     from langchain_openai import ChatOpenAI
     from veritrix import trace
-
+    
     trace.init("langchain-agent")
     llm = ChatOpenAI(model="gpt-4o")
     # Use llm normally — all calls are traced
@@ -111,7 +109,7 @@ print(output["answer"])
 ## What Gets Captured Automatically
 
 | Signal | Details |
-|---|---|
+| --- | --- |
 | **LLM calls** | Model name, prompt messages, completion, token counts, latency |
 | **Tool calls** | Tool name, input, output, duration |
 | **Retriever calls** | Query, retrieved documents, relevance scores |

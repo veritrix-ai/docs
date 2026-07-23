@@ -20,7 +20,7 @@ Getting your first trace into Veritrix takes about ten seconds of actual coding.
     Install the Veritrix SDK into your Python environment.
 
     ```bash
-    pip install veritrix
+    pip install "git+https://github.com/veritrix-ai/veritrix-sdk.git"
     ```
 
     Veritrix requires Python 3.8 or later. It works with all major agent frameworks out of the box — no additional adapters needed.
@@ -30,7 +30,7 @@ Getting your first trace into Veritrix takes about ten seconds of actual coding.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("my-agent")
     ```
 
@@ -38,7 +38,7 @@ Getting your first trace into Veritrix takes about ten seconds of actual coding.
 
     ```python
     from veritrix import trace
-
+    
     trace.init("my-agent", api_key="vx-your-api-key-here")
     ```
 
@@ -50,47 +50,50 @@ Getting your first trace into Veritrix takes about ten seconds of actual coding.
     Run your agent exactly as you normally would. Veritrix instruments in the background — there's nothing else to change.
 
     <CodeGroup>
-      ```python OpenAI Agents SDK
-      from veritrix import trace
-      from agents import Agent, Runner
 
-      trace.init("research-agent")
+    ```python OpenAI Agents SDK
+    from veritrix import trace
+    from agents import Agent, Runner
+    
+    trace.init("research-agent")
+    
+    agent = Agent(name="ResearchAgent", instructions="You are a helpful research assistant.")
+    result = Runner.run_sync(agent, "Summarise the latest news on LLM reliability.")
+    print(result.final_output)
+    ```
 
-      agent = Agent(name="ResearchAgent", instructions="You are a helpful research assistant.")
-      result = Runner.run_sync(agent, "Summarise the latest news on LLM reliability.")
-      print(result.final_output)
-      ```
+    ```python LangChain
+    from veritrix import trace
+    from langchain.agents import initialize_agent, load_tools
+    from langchain.llms import OpenAI
+    
+    trace.init("langchain-agent")
+    
+    llm = OpenAI(temperature=0)
+    tools = load_tools(["serpapi", "llm-math"], llm=llm)
+    agent = initialize_agent(tools, llm, agent="zero-shot-react-description")
+    agent.run("What is the square root of the number of days in a leap year?")
+    ```
 
-      ```python LangChain
-      from veritrix import trace
-      from langchain.agents import initialize_agent, load_tools
-      from langchain.llms import OpenAI
+    ```python CrewAI
+    from veritrix import trace
+    from crewai import Crew, Agent, Task
+    
+    trace.init("crewai-pipeline")
+    
+    researcher = Agent(role="Researcher", goal="Find accurate information", backstory="You are a diligent researcher.")
+    task = Task(description="Research OpenTelemetry best practices.", agent=researcher)
+    crew = Crew(agents=[researcher], tasks=[task])
+    crew.kickoff()
+    ```
 
-      trace.init("langchain-agent")
-
-      llm = OpenAI(temperature=0)
-      tools = load_tools(["serpapi", "llm-math"], llm=llm)
-      agent = initialize_agent(tools, llm, agent="zero-shot-react-description")
-      agent.run("What is the square root of the number of days in a leap year?")
-      ```
-
-      ```python CrewAI
-      from veritrix import trace
-      from crewai import Crew, Agent, Task
-
-      trace.init("crewai-pipeline")
-
-      researcher = Agent(role="Researcher", goal="Find accurate information", backstory="You are a diligent researcher.")
-      task = Task(description="Research OpenTelemetry best practices.", agent=researcher)
-      crew = Crew(agents=[researcher], tasks=[task])
-      crew.kickoff()
-      ```
     </CodeGroup>
   </Step>
   <Step title="View your traces in the dashboard">
     Open [app.veritrix.xyz](https://app.veritrix.xyz) and navigate to your project. You'll see a live trace waterfall showing every span from your agent run.
 
     Each trace entry shows:
+
     - **Span name** — the operation that ran (e.g. `planner.plan`, `researcher.search_docs`)
     - **Duration** — how long the span took in milliseconds
     - **Token counts** — input and output tokens consumed
@@ -156,7 +159,7 @@ Getting your first trace into Veritrix takes about ten seconds of actual coding.
 
     When a span fails, Veritrix generates a plain-language root-cause summary — for example:
 
-    > *Reviewer failed to parse Coder's output as JSON on all 3 retries. The Coder's tool schema expects `diff: string`, but it returned `diff: object`.*
+    > _Reviewer failed to parse Coder's output as JSON on all 3 retries. The Coder's tool schema expects `diff: string`, but it returned `diff: object`._
 
     <Tip>
       Click any span in the waterfall to inspect its full payload — the exact prompt sent to the model, the raw tool input and output, and any error details.
@@ -172,6 +175,7 @@ Now that you have tracing running, explore the rest of the platform:
   <Card title="How It Works" icon="gears" href="/how-it-works">
     Understand the three-phase Instrument → Trace → Diagnose model and what Veritrix captures automatically.
   </Card>
+
   <Card title="Integrations" icon="plug" href="/integrations/openai-agents-sdk">
     Set up framework-specific instrumentation for OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, and more.
   </Card>
